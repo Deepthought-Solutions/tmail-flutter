@@ -5,6 +5,7 @@ import 'package:model/oidc/oidc_configuration.dart';
 import 'package:model/oidc/request/oidc_request.dart';
 import 'package:model/oidc/response/oidc_response.dart';
 import 'package:tmail_ui_user/features/home/presentation/home_controller.dart';
+import 'package:tmail_ui_user/features/login/data/network/config/oidc_constant.dart';
 import 'package:tmail_ui_user/features/login/domain/exceptions/authentication_exception.dart';
 import 'package:tmail_ui_user/features/login/domain/model/base_url_oidc_response.dart';
 import 'package:tmail_ui_user/features/login/domain/state/get_oidc_configuration_state.dart';
@@ -20,11 +21,23 @@ extension HandleWebFingerToGetTokenExtension on HomeController {
 
     if (baseUri == null) {
       goToLogin();
-    } else {
-      consumeState(
-        checkOIDCIsAvailableInteractor.execute(OIDCRequest.fromUri(baseUri)),
-      );
+      return;
     }
+
+    // When AUTHORITY_OIDC is explicitly configured, bypass WebFinger
+    final configuredAuthority = AppConfig.authorityOidc;
+    if (configuredAuthority.isNotEmpty) {
+      handleOIDCConfigurationSuccess(OIDCConfiguration(
+        authority: configuredAuthority,
+        clientId: OIDCConstant.clientId,
+        scopes: AppConfig.oidcScopes,
+      ));
+      return;
+    }
+
+    consumeState(
+      checkOIDCIsAvailableInteractor.execute(OIDCRequest.fromUri(baseUri)),
+    );
   }
 
   void getOIDCConfiguration(OIDCResponse oidcResponse) {

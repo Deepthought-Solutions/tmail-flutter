@@ -47,5 +47,8 @@ FROM nginx:alpine
 RUN apk add gzip
 COPY --from=build-env /app/server/nginx.conf /etc/nginx
 COPY --from=build-env /app/build/web /usr/share/nginx/html
+# Remove env.file from service worker cache manifest so it is always
+# fetched fresh from the server (where it can be volume-mounted at runtime).
+RUN sed -i '/"assets\/env.file"/d' /usr/share/nginx/html/flutter_service_worker.js
 EXPOSE 80
 CMD gzip -k -r -f /usr/share/nginx/html/ && nginx -g 'daemon off;'

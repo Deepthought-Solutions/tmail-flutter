@@ -19,7 +19,10 @@ class OidcConfigurationCacheManager extends CacheManagerInteraction {
   Future<OIDCConfiguration> getOidcConfiguration() async {
     final oidcConfigurationCache = await _oidcConfigurationCacheClient.getItem(CachingConstants.oidcConfigurationCacheKeyName);
     if (oidcConfigurationCache == null) {
-      final authority = _sharedPreferences.getString(OIDCConstant.keyAuthorityOidc);
+      // Priority: env.file AUTHORITY_OIDC > SharedPreferences KEY_AUTHORITY_OIDC
+      String? authority = AppConfig.authorityOidc.isNotEmpty
+          ? AppConfig.authorityOidc
+          : _sharedPreferences.getString(OIDCConstant.keyAuthorityOidc);
 
       if (authority == null || authority.isEmpty) {
         throw CanNotFoundOIDCAuthority();
@@ -31,7 +34,17 @@ class OidcConfigurationCacheManager extends CacheManagerInteraction {
         scopes: AppConfig.oidcScopes,
       );
     } else {
-      return oidcConfigurationCache.toOIDCConfiguration();
+      final config = oidcConfigurationCache.toOIDCConfiguration();
+      // Override cached authority when AUTHORITY_OIDC is explicitly configured
+      if (AppConfig.authorityOidc.isNotEmpty) {
+        return OIDCConfiguration(
+          authority: AppConfig.authorityOidc,
+          clientId: config.clientId,
+          scopes: config.scopes,
+          isTWP: config.isTWP,
+        );
+      }
+      return config;
     }
   }
 

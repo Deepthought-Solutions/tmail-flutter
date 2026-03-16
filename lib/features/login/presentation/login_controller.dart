@@ -20,6 +20,7 @@ import 'package:model/oidc/response/oidc_response.dart';
 import 'package:tmail_ui_user/features/base/reloadable/reloadable_controller.dart';
 import 'package:tmail_ui_user/features/home/domain/state/auto_sign_in_via_deep_link_state.dart';
 import 'package:tmail_ui_user/features/home/domain/state/get_session_state.dart';
+import 'package:tmail_ui_user/features/login/data/network/config/oidc_constant.dart';
 import 'package:tmail_ui_user/features/login/data/network/oidc_error.dart';
 import 'package:tmail_ui_user/features/login/domain/exceptions/authentication_exception.dart';
 import 'package:tmail_ui_user/features/login/domain/exceptions/login_exception.dart';
@@ -366,14 +367,26 @@ class LoginController extends ReloadableController {
   void _checkOIDCIsAvailable() {
     if (_currentBaseUrl == null) {
       dispatchState(Left(CheckOIDCIsAvailableFailure(CanNotFoundBaseUrl())));
-    } else {
-      consumeState(_checkOIDCIsAvailableInteractor.execute(
-        OIDCRequest(
-          baseUrl: _currentBaseUrl!.toString(),
-          resourceUrl: _currentBaseUrl!.origin
-        )
-      ));
+      return;
     }
+
+    // When AUTHORITY_OIDC is explicitly configured, bypass WebFinger
+    final configuredAuthority = AppConfig.authorityOidc;
+    if (configuredAuthority.isNotEmpty) {
+      _getOIDCConfigurationSuccess(OIDCConfiguration(
+        authority: configuredAuthority,
+        clientId: OIDCConstant.clientId,
+        scopes: AppConfig.oidcScopes,
+      ));
+      return;
+    }
+
+    consumeState(_checkOIDCIsAvailableInteractor.execute(
+      OIDCRequest(
+        baseUrl: _currentBaseUrl!.toString(),
+        resourceUrl: _currentBaseUrl!.origin,
+      ),
+    ));
   }
 
   void handleBackButtonAction(BuildContext context) {
