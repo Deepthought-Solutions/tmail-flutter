@@ -150,9 +150,13 @@ class LoginController extends ReloadableController {
         autoFillCompanyServerMail();
       } else if (PlatformInfo.isWeb) {
         _checkOIDCIsAvailable();
+      } else if (PlatformInfo.isMobile && _canAutoStartOidc()) {
+        _autoStartOidc();
       }
     } else if (PlatformInfo.isWeb) {
       _getAuthenticationInfo();
+    } else if (PlatformInfo.isMobile && _canAutoStartOidc()) {
+      _autoStartOidc();
     }
   }
 
@@ -361,6 +365,15 @@ class LoginController extends ReloadableController {
     if (PlatformInfo.isMobile && _currentBaseUrl != null) {
       _storeBaseUrlToCache(_currentBaseUrl!);
     }
+    _checkOIDCIsAvailable();
+  }
+
+  bool _canAutoStartOidc() {
+    return AppConfig.authorityOidc.isNotEmpty && AppConfig.baseUrl.isNotEmpty;
+  }
+
+  void _autoStartOidc() {
+    _currentBaseUrl = Uri.tryParse(AppConfig.baseUrl);
     _checkOIDCIsAvailable();
   }
 

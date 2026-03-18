@@ -16,5 +16,12 @@ class OIDCConstant {
   static const String loginRedirectOidcWeb = 'login-callback.html';
   static const String logoutRedirectOidcWeb = 'logout-callback.html';
 
-  static String get clientId => PlatformInfo.isWeb ? AppConfig.webOidcClientId : mobileOidcClientId;
+  static String get clientId {
+    if (PlatformInfo.isWeb) {
+      return AppConfig.webOidcClientId;
+    }
+    // Prefer MOBILE_OIDC_CLIENT_ID from env.file, fall back to hardcoded default
+    final mobileClientId = AppConfig.mobileOidcClientId;
+    return mobileClientId.isNotEmpty ? mobileClientId : mobileOidcClientId;
+  }
 }
