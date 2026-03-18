@@ -6,10 +6,11 @@ extension URIExtension on Uri {
   Uri toQualifiedUrl({required Uri baseUrl}) {
     log('SessionUtils::toQualifiedUrl():baseUrl: $baseUrl | sourceUrl: $this');
     if (hasOrigin) {
-      // When the source URL has an origin that differs from baseUrl
-      // (e.g. JMAP server returns http://host:8080 but we connect via https://host),
-      // rewrite using baseUrl's scheme/host/port to avoid mixed-content issues.
-      if (origin != baseUrl.origin) {
+      // When behind a reverse proxy, the JMAP server may return URLs with
+      // the internal scheme (e.g. http://host:8080) while the client
+      // connects via https://host. Rewrite the origin to match baseUrl when
+      // the hostname is the same but the scheme differs (http vs https).
+      if (host == baseUrl.host && scheme != baseUrl.scheme) {
         final rewritten = baseUrl.replace(
           path: path,
           query: query.isEmpty ? null : query,
