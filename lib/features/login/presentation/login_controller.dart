@@ -94,9 +94,11 @@ class LoginController extends ReloadableController {
   final TextEditingController urlInputController = TextEditingController();
   final TextEditingController usernameInputController = TextEditingController();
   final TextEditingController passwordInputController = TextEditingController();
+  final TextEditingController oidcAuthorityInputController = TextEditingController();
   final FocusNode baseUrlFocusNode = FocusNode();
   final FocusNode userNameFocusNode = FocusNode();
   final FocusNode passFocusNode = FocusNode();
+  final FocusNode oidcAuthorityFocusNode = FocusNode();
 
   final loginFormType = LoginFormType.none.obs;
 
@@ -150,13 +152,9 @@ class LoginController extends ReloadableController {
         autoFillCompanyServerMail();
       } else if (PlatformInfo.isWeb) {
         _checkOIDCIsAvailable();
-      } else if (PlatformInfo.isMobile && _canAutoStartOidc()) {
-        _autoStartOidc();
       }
     } else if (PlatformInfo.isWeb) {
       _getAuthenticationInfo();
-    } else if (PlatformInfo.isMobile && _canAutoStartOidc()) {
-      _autoStartOidc();
     }
   }
 
@@ -424,6 +422,10 @@ class LoginController extends ReloadableController {
         passwordInputController.clear();
         loginFormType.value = LoginFormType.baseUrlForm;
         break;
+      case LoginFormType.oidcAuthorityForm:
+        oidcAuthorityInputController.clear();
+        loginFormType.value = LoginFormType.dnsLookupForm;
+        break;
       default:
         break;
     }
@@ -614,8 +616,11 @@ class LoginController extends ReloadableController {
       removeCompanyServerLoginInfo();
     }
 
-    if (PlatformInfo.isMobile && loginFormType.value == LoginFormType.dnsLookupForm) {
-      _showPasswordForm();
+    if (PlatformInfo.isMobile) {
+      // On mobile, offer manual OIDC authority input before falling back to
+      // password/credential forms. This supports JMAP servers that delegate
+      // auth to an external IdP on a different domain.
+      _showOidcAuthorityForm();
     } else {
       _showCredentialForm();
     }
@@ -639,6 +644,33 @@ class LoginController extends ReloadableController {
     clearState();
     loginFormType.value = LoginFormType.passwordForm;
     passFocusNode.requestFocus();
+  }
+
+  void _showOidcAuthorityForm() {
+    clearState();
+    loginFormType.value = LoginFormType.oidcAuthorityForm;
+    oidcAuthorityFocusNode.requestFocus();
+  }
+
+  void handleOidcAuthoritySubmitted() {
+    final authorityUrl = oidcAuthorityInputController.text.trim();
+    if (authorityUrl.isEmpty) {
+      // Skip OIDC, fall back to password form
+      _showPasswordForm();
+      return;
+    }
+    final authority = authorityUrl.startsWith('http')
+        ? authorityUrl
+        : 'https://$authorityUrl';
+    _getOIDCConfigurationSuccess(OIDCConfiguration(
+      authority: authority,
+      clientId: OIDCConstant.clientId,
+      scopes: AppConfig.oidcScopes,
+    ));
+  }
+
+  void handleSkipOidcAuthority() {
+    _showPasswordForm();
   }
 
   void onUsernameChange(String value) {

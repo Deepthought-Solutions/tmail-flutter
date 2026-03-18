@@ -50,6 +50,21 @@ class AppLocalizations {
         name: 'prefix_https');
   }
 
+  String get oidcAuthorityHint {
+    return Intl.message('Identity provider URL',
+        name: 'oidcAuthorityHint');
+  }
+
+  String get skipUsePasswordInstead {
+    return Intl.message('Skip, use password instead',
+        name: 'skipUsePasswordInstead');
+  }
+
+  String get oidcAuthorityMessage {
+    return Intl.message('Enter your identity provider URL to sign in with SSO',
+        name: 'oidcAuthorityMessage');
+  }
+
   String get email {
     return Intl.message('email',
         name: 'email');

@@ -79,6 +79,8 @@ class LoginMessageWidget extends StatelessWidget {
                 return appLocalizations.enterYourPasswordToSignIn;
               } else if (formType == LoginFormType.baseUrlForm) {
                 return appLocalizations.loginInputUrlMessage;
+              } else if (formType == LoginFormType.oidcAuthorityForm) {
+                return appLocalizations.oidcAuthorityMessage;
               } else {
                 return '';
               }

@@ -119,6 +119,8 @@ class LoginView extends BaseLoginView {
                   return _buildUrlInput(context);
                 case LoginFormType.credentialForm:
                   return buildInputCredentialForm(context);
+                case LoginFormType.oidcAuthorityForm:
+                  return _buildOidcAuthorityInput(context);
                 default:
                   return const SizedBox.shrink();
               }
@@ -217,6 +219,73 @@ class LoginView extends BaseLoginView {
     return !(controller.responsiveUtils.isMobile(context) && controller.responsiveUtils.isPortrait(context));
   }
 
+  Widget _buildOidcAuthorityInput(BuildContext context) {
+    return Padding(
+      key: const Key('oidc_authority_form'),
+      padding: const EdgeInsets.only(right: 24, left: 24, bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller.oidcAuthorityInputController,
+            focusNode: controller.oidcAuthorityFocusNode,
+            textInputAction: TextInputAction.go,
+            keyboardType: TextInputType.url,
+            onSubmitted: (_) => controller.handleOidcAuthoritySubmitted(),
+            decoration: (LoginInputDecorationBuilder()
+                ..setLabelText(AppLocalizations.of(context).oidcAuthorityHint)
+                ..setPrefixText(AppLocalizations.of(context).prefix_https))
+              .build(),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: controller.handleSkipOidcAuthority,
+            child: Text(
+              AppLocalizations.of(context).skipUsePasswordInstead,
+              style: ThemeUtils.defaultTextStyleInterFont.copyWith(
+                fontSize: 14,
+                color: AppColor.primaryColor,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOidcAuthorityButton(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16, left: 24, right: 24),
+      width: controller.responsiveUtils.getDeviceWidth(context),
+      height: 48,
+      child: ElevatedButton(
+        key: const Key('submitOidcAuthority'),
+        style: ElevatedButton.styleFrom(
+          foregroundColor: Colors.white,
+          backgroundColor: AppColor.primaryColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(width: 0, color: AppColor.primaryColor),
+          ),
+        ),
+        child: Text(
+          AppLocalizations.of(context).signIn,
+          style: ThemeUtils.defaultTextStyleInterFont.copyWith(
+            fontSize: 16, color: Colors.white,
+          ),
+        ),
+        onPressed: controller.handleOidcAuthoritySubmitted,
+      ),
+    );
+  }
+
+  Widget _buildOidcAuthorityButtonInContext(BuildContext context) {
+    return _supportScrollForm(context)
+        ? _buildOidcAuthorityButton(context)
+        : _buildExpandedButton(context, _buildOidcAuthorityButton(context));
+  }
+
   Widget _buildLoadingProgress(BuildContext context) {
     return Obx(() => controller.viewState.value.fold(
       (failure) {
@@ -228,6 +297,8 @@ class LoginView extends BaseLoginView {
           case LoginFormType.passwordForm:
           case LoginFormType.credentialForm:
             return _buildLoginButtonInContext(context);
+          case LoginFormType.oidcAuthorityForm:
+            return _buildOidcAuthorityButtonInContext(context);
           default:
             return const SizedBox.shrink();
         }
@@ -245,6 +316,8 @@ class LoginView extends BaseLoginView {
             case LoginFormType.passwordForm:
             case LoginFormType.credentialForm:
               return _buildLoginButtonInContext(context);
+            case LoginFormType.oidcAuthorityForm:
+              return _buildOidcAuthorityButtonInContext(context);
             default:
               return const SizedBox.shrink();
           }

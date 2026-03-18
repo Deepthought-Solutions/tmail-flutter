@@ -4,5 +4,6 @@ enum LoginFormType {
   baseUrlForm,
   credentialForm,
   passwordForm,
-  dnsLookupForm;
+  dnsLookupForm,
+  oidcAuthorityForm;
 }
