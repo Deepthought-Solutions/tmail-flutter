@@ -6,6 +6,18 @@ extension URIExtension on Uri {
   Uri toQualifiedUrl({required Uri baseUrl}) {
     log('SessionUtils::toQualifiedUrl():baseUrl: $baseUrl | sourceUrl: $this');
     if (hasOrigin) {
+      // When the source URL has an origin that differs from baseUrl
+      // (e.g. JMAP server returns http://host:8080 but we connect via https://host),
+      // rewrite using baseUrl's scheme/host/port to avoid mixed-content issues.
+      if (origin != baseUrl.origin) {
+        final rewritten = baseUrl.replace(
+          path: path,
+          query: query.isEmpty ? null : query,
+          fragment: fragment.isEmpty ? null : fragment,
+        );
+        log('SessionUtils::toQualifiedUrl():rewritten from $origin to ${baseUrl.origin}: $rewritten');
+        return rewritten;
+      }
       final qualifiedUrl = toString();
       log('SessionUtils::toQualifiedUrl():qualifiedUrl: $qualifiedUrl');
       return Uri.parse(qualifiedUrl);
