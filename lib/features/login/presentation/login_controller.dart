@@ -374,15 +374,6 @@ class LoginController extends ReloadableController {
     _checkOIDCIsAvailable();
   }
 
-  bool _canAutoStartOidc() {
-    return AppConfig.authorityOidc.isNotEmpty && AppConfig.baseUrl.isNotEmpty;
-  }
-
-  void _autoStartOidc() {
-    _baseUri = Uri.tryParse(AppConfig.baseUrl);
-    _checkOIDCIsAvailable();
-  }
-
   void _checkOIDCIsAvailable() {
     if (_currentBaseUrl == null) {
       dispatchState(Left(CheckOIDCIsAvailableFailure(CanNotFoundBaseUrl())));
