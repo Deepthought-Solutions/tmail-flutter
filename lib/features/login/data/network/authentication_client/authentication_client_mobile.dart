@@ -55,6 +55,14 @@ class AuthenticationClientMobile with AuthenticationClientInteractionMixin
     OIDCConfiguration config,
     OIDCDiscoveryResponse discoveryResponse,
   ) async {
+    // Skip browser-based end_session for external OIDC providers.
+    // Many IdPs (Authentik, Kanidm, etc.) don't support post_logout_redirect_uri
+    // with custom URL schemes, which causes the app to hang indefinitely
+    // waiting for the browser to redirect back.
+    if (!config.isTWP) {
+      log('$runtimeType::logoutOidc(): Skipping browser end_session for external OIDC provider');
+      return true;
+    }
     final endSessionRequest = getEndSessionRequest(
       tokenId,
       config,
