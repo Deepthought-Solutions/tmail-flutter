@@ -113,14 +113,6 @@
                <data android:scheme="twakemail.mobile"
                    android:host="redirect" />
            </intent-filter>
-           <!-- OIDC callback for external identity providers -->
-           <intent-filter android:label="flutter_web_auth_2_oidc">
-               <action android:name="android.intent.action.VIEW" />
-               <category android:name="android.intent.category.DEFAULT" />
-               <category android:name="android.intent.category.BROWSABLE" />
-               <data android:scheme="teammail.mobile"
-                   android:host="oauthredirect" />
-           </intent-filter>
        </activity>
 
        <provider android:authorities="${applicationId}.firebaseinitprovider"
