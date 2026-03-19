@@ -103,6 +103,14 @@
             </intent-filter>
         </activity>
 
+       <!-- Override RedirectUriReceiverActivity to ensure the app regains
+            focus after the OIDC redirect from the Custom Tab browser -->
+       <activity
+           android:name="net.openid.appauth.RedirectUriReceiverActivity"
+           android:exported="true"
+           android:launchMode="singleTask"
+           tools:replace="android:launchMode" />
+
        <activity
            android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
            android:exported="true">

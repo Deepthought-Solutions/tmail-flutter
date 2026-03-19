@@ -36,7 +36,7 @@ mixin AuthenticationClientInteractionMixin {
 
   ExternalUserAgent getExternalUserAgent() => PlatformInfo.isIOS
       ? ExternalUserAgent.ephemeralAsWebAuthenticationSession
-      : ExternalUserAgent.externalBrowser;
+      : ExternalUserAgent.asWebAuthenticationSession;
 
   TokenRequest getRefreshTokenRequest(
     String clientId,
