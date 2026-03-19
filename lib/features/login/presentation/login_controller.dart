@@ -323,6 +323,14 @@ class LoginController extends ReloadableController {
   }
 
   void _handleCheckOIDCIsAvailableFailure(CheckOIDCIsAvailableFailure failure) {
+    if (PlatformInfo.isMobile) {
+      // On mobile, when WebFinger fails, show the OIDC authority form
+      // instead of trying the base URL's /.well-known/openid-configuration.
+      // This avoids picking up the JMAP server's built-in OIDC provider
+      // (e.g. Stalwart) when the real IdP is on a different domain.
+      _handleCommonOIDCFailure();
+      return;
+    }
     try {
       featureFailure = failure;
       tryGetOIDCConfigurationFromBaseUrl(_currentBaseUrl!);
@@ -371,7 +379,7 @@ class LoginController extends ReloadableController {
   }
 
   void _autoStartOidc() {
-    _currentBaseUrl = Uri.tryParse(AppConfig.baseUrl);
+    _baseUri = Uri.tryParse(AppConfig.baseUrl);
     _checkOIDCIsAvailable();
   }
 
