@@ -80,4 +80,9 @@ class AppConfig {
 
   static bool get isForceEmailQueryEnabled =>
       dotenv.get('FORCE_EMAIL_QUERY', fallback: 'false') == 'true';
+
+  static String? get calendarUrl {
+    final url = dotenv.get('CALENDAR_URL', fallback: '');
+    return url.trim().isEmpty ? null : url;
+  }
 }

@@ -5777,4 +5777,26 @@ class AppLocalizations {
       name: 'deleteALabelFailure',
     );
   }
+
+  String calendarConflictWarning(int count) {
+    return Intl.message(
+      'Conflict with $count event(s)',
+      name: 'calendarConflictWarning',
+      args: [count],
+    );
+  }
+
+  String get viewInCalendar {
+    return Intl.message(
+      'View in calendar',
+      name: 'viewInCalendar',
+    );
+  }
+
+  String get conflictDetectionFailed {
+    return Intl.message(
+      'Could not check for calendar conflicts',
+      name: 'conflictDetectionFailed',
+    );
+  }
 }

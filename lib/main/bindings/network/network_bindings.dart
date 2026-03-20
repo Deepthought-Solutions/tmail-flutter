@@ -8,7 +8,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:get/get.dart';
 import 'package:jmap_dart_client/http/http_client.dart';
+import 'package:tmail_ui_user/features/contact/data/network/carddav_api.dart';
 import 'package:tmail_ui_user/features/contact/data/network/contact_api.dart';
+import 'package:tmail_ui_user/features/email/data/network/caldav_api.dart';
 import 'package:tmail_ui_user/features/email/data/network/email_api.dart';
 import 'package:tmail_ui_user/features/email/data/network/mdn_api.dart';
 import 'package:tmail_ui_user/features/home/data/network/session_api.dart';
@@ -120,6 +122,7 @@ class NetworkBindings extends Bindings {
     Get.put(RuleFilterAPI(Get.find<HttpClient>()));
     Get.put(VacationAPI(Get.find<HttpClient>()));
     Get.put(ContactAPI(Get.find<HttpClient>()));
+    Get.put(CardDavApi(Get.find<Dio>(), Get.find<Uuid>()));
     Get.put(IdentityAPI(Get.find<HttpClient>()));
     Get.put(MdnAPI(Get.find<HttpClient>()));
     Get.put(ForwardingAPI(Get.find<HttpClient>()));
@@ -128,6 +131,7 @@ class NetworkBindings extends Bindings {
     Get.put(ServerSettingsAPI(Get.find<HttpClient>()));
     Get.put(WebSocketApi(Get.find<DioClient>()));
     Get.put(LinagoraEcosystemApi(Get.find<DioClient>()));
+    Get.put(CalDavApi(Get.find<Dio>()));
   }
 
   void _bindingConnection() {

@@ -7,6 +7,7 @@ import 'package:core/presentation/views/tooltip/iframe_tooltip_overlay.dart';
 import 'package:core/utils/platform_info.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jmap_dart_client/jmap/mail/calendar/attendance/calendar_event_attendance.dart';
 import 'package:jmap_dart_client/jmap/mail/calendar/calendar_event.dart';
 import 'package:jmap_dart_client/jmap/mail/email/email.dart';
 import 'package:labels/model/label.dart';
@@ -29,8 +30,11 @@ import 'package:tmail_ui_user/features/email/presentation/extensions/validate_di
 import 'package:tmail_ui_user/features/email/presentation/styles/email_view_styles.dart';
 import 'package:tmail_ui_user/features/email/presentation/utils/email_action_reactor/email_action_reactor.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_event_action_banner_widget.dart';
+import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_event_conflict_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_event_detail_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_event_information_widget.dart';
+import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_view_link_widget.dart';
+import 'package:tmail_ui_user/main/utils/app_config.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/email_attachments_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/email_subject_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/email_view_app_bar_widget.dart';
@@ -366,6 +370,20 @@ class EmailView extends GetWidget<SingleEmailController> {
                     .responsiveUtils
                     .isPortraitMobile(context),
               )),
+              Obx(() => CalendarEventConflictWidget(
+                conflicts: controller.conflictingEvents,
+              )),
+              Obx(() {
+                final calendarUrl = AppConfig.calendarUrl;
+                final isAccepted = controller.attendanceStatus.value == AttendanceStatus.accepted;
+                if (calendarUrl != null && isAccepted) {
+                  return CalendarViewLinkWidget(
+                    calendarUrl: calendarUrl,
+                    eventDate: calendarEvent.localStartDate,
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
               if (_validateDisplayEventActionBanner(
                   context: context,
                   event: calendarEvent,

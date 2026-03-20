@@ -32,6 +32,7 @@ import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/model/sear
 import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/model/search/quick_search_filter.dart';
 import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/styles/filter_message_button_style.dart';
 import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/styles/mailbox_dashboard_view_web_style.dart';
+import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/widgets/calendar_button_widget.dart';
 import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/widgets/compose_button_widget.dart';
 import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/widgets/download/download_task_item_widget.dart';
 import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/widgets/mark_mailbox_as_read_loading_banner.dart';
@@ -56,6 +57,7 @@ import 'package:tmail_ui_user/features/thread/presentation/styles/spam_banner/sp
 import 'package:tmail_ui_user/features/thread/presentation/thread_view.dart';
 import 'package:tmail_ui_user/features/thread_detail/presentation/thread_detail_view.dart';
 import 'package:tmail_ui_user/main/localizations/app_localizations.dart';
+import 'package:tmail_ui_user/main/utils/app_config.dart';
 import 'package:tmail_ui_user/main/routes/route_navigation.dart';
 
 class MailboxDashBoardView extends BaseMailboxDashBoardView {
@@ -123,6 +125,11 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
                               onTapAction: () =>
                                 controller.openComposer(ComposerArguments()),
                             ),
+                            if (AppConfig.calendarUrl != null)
+                              CalendarButtonWidget(
+                                imagePaths: controller.imagePaths,
+                                calendarUrl: AppConfig.calendarUrl!,
+                              ),
                             Expanded(child: SizedBox(
                               width: ResponsiveUtils.defaultSizeMenu,
                               child: Obx(() {

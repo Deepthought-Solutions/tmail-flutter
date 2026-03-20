@@ -29,7 +29,9 @@ import 'package:tmail_ui_user/features/base/mixin/message_dialog_action_manager.
 import 'package:tmail_ui_user/features/base/state/button_state.dart';
 import 'package:tmail_ui_user/features/download/domain/model/download_source_view.dart';
 import 'package:tmail_ui_user/features/download/domain/state/download_attachment_for_web_state.dart';
+import 'package:tmail_ui_user/features/email/data/network/caldav_api.dart';
 import 'package:tmail_ui_user/features/email/domain/extensions/list_attachments_extension.dart';
+import 'package:tmail_ui_user/features/email/domain/model/caldav_conflict.dart';
 import 'package:tmail_ui_user/features/email/domain/utils/calendar_event_capability_helper.dart';
 import 'package:tmail_ui_user/features/email/domain/utils/calendar_event_capability_registry.dart';
 import 'package:tmail_ui_user/features/email/domain/model/detailed_email.dart';
@@ -148,6 +150,7 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
   final isEmailContentClipped = RxBool(false);
   final attendanceStatus = Rxn<AttendanceStatus>();
   final htmlContentViewKey = GlobalKey<HtmlContentViewState>();
+  final conflictingEvents = RxList<CalDavConflict>([]);
 
   Identity? _identitySelected;
   ButtonState? _printEmailButtonState;
@@ -1247,6 +1250,61 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
       );
       registry.setIdentityId(_identitySelected?.id?.id.value);
       registry.setLanguageCode(LocalizationService.getInitialLocale().languageCode);
+
+      // Trigger conflict detection against CalDAV
+      _checkCalendarConflicts(blob.calendarEventList.first);
+    }
+  }
+
+  void _checkCalendarConflicts(CalendarEvent event) {
+    final startDate = event.startUtcDate?.value ?? event.startDate;
+    final endDate = event.endUtcDate?.value ?? event.endDate;
+
+    if (startDate == null || endDate == null) {
+      log('SingleEmailController::_checkCalendarConflicts: no start/end date');
+      return;
+    }
+
+    final userEmail = _identitySelected?.email
+        ?? mailboxDashBoardController.ownEmailAddress.value;
+    if (userEmail.isEmpty) {
+      log('SingleEmailController::_checkCalendarConflicts: no user email');
+      return;
+    }
+
+    // Extract username from email for CalDAV path
+    final username = userEmail.contains('@') ? userEmail.split('@').first : userEmail;
+    final calendarPath = '/dav/cal/$username/default/';
+
+    try {
+      final calDavApi = Get.find<CalDavApi>();
+      final dynamicUrlInterceptors = Get.find<DynamicUrlInterceptors>();
+      final baseUrl = dynamicUrlInterceptors.jmapUrl ?? dynamicUrlInterceptors.baseUrl ?? '';
+
+      if (baseUrl.isEmpty) {
+        log('SingleEmailController::_checkCalendarConflicts: no base URL');
+        return;
+      }
+
+      // Build full CalDAV URL using same origin as JMAP
+      final uri = Uri.parse(baseUrl);
+      final calDavBaseUrl = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+
+      log('SingleEmailController::_checkCalendarConflicts: querying $calDavBaseUrl$calendarPath');
+
+      calDavApi.queryConflicts(
+        calendarPath: '$calDavBaseUrl$calendarPath',
+        start: startDate,
+        end: endDate,
+      ).then((conflicts) {
+        log('SingleEmailController::_checkCalendarConflicts: found ${conflicts.length} conflicts');
+        conflictingEvents.value = conflicts;
+      }).catchError((error) {
+        log('SingleEmailController::_checkCalendarConflicts: error=$error');
+        conflictingEvents.clear();
+      });
+    } catch (e) {
+      log('SingleEmailController::_checkCalendarConflicts: setup error=$e');
     }
   }
 
@@ -1384,12 +1442,12 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
     final hasAccount = accountId != null;
     final hasSession = session != null;
     final capAvailable = hasSession && hasAccount ? session!.validateCalendarEventCapability(accountId!).isAvailable : false;
-    print('[TRAKTION-RSVP] accept: interactor=$hasInteractor blobId=$hasBlobId account=$hasAccount session=$hasSession capAvailable=$capAvailable');
+    log('[TRAKTION-RSVP] accept: interactor=$hasInteractor blobId=$hasBlobId account=$hasAccount session=$hasSession capAvailable=$capAvailable');
     if (!hasInteractor || !hasBlobId || !hasAccount || !hasSession || !capAvailable) {
-      print('[TRAKTION-RSVP] accept BLOCKED - falling into failure');
+      log('[TRAKTION-RSVP] accept BLOCKED - falling into failure');
       consumeState(Stream.value(Left(CalendarEventAcceptFailure())));
     } else {
-      print('[TRAKTION-RSVP] accept PROCEEDING with blobId=${_displayingEventBlobId!.value}');
+      log('[TRAKTION-RSVP] accept PROCEEDING with blobId=${_displayingEventBlobId!.value}');
       consumeState(_acceptCalendarEventInteractor!.execute(
         accountId!,
         {_displayingEventBlobId!},

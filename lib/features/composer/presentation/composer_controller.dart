@@ -37,6 +37,7 @@ import 'package:tmail_ui_user/features/base/mixin/auto_complete_result_mixin.dar
 import 'package:tmail_ui_user/features/base/mixin/message_dialog_action_manager.dart';
 import 'package:tmail_ui_user/features/base/state/base_ui_state.dart';
 import 'package:tmail_ui_user/features/base/state/button_state.dart';
+import 'package:tmail_ui_user/features/contact/data/network/carddav_api.dart';
 import 'package:tmail_ui_user/features/composer/domain/exceptions/compose_email_exception.dart';
 import 'package:tmail_ui_user/features/composer/domain/exceptions/set_method_exception.dart';
 import 'package:tmail_ui_user/features/composer/domain/extensions/set_method_exception_description_extension.dart';
@@ -941,6 +942,9 @@ class ComposerController extends BaseController
     if (resultState is SendEmailSuccess ||
         mailboxDashBoardController
             .validateSendingEmailFailedWhenNetworkIsLostOnMobile(resultState)) {
+      if (resultState is SendEmailSuccess) {
+        _syncRecipientsToCardDav();
+      }
       _sendButtonState = ButtonState.enabled;
       _closeComposerAction(result: resultState);
     } else if (resultState is SendEmailFailure &&
@@ -961,6 +965,56 @@ class ComposerController extends BaseController
       }
     } else {
       _sendButtonState = ButtonState.enabled;
+    }
+  }
+
+  /// Fire-and-forget: sync all recipients to Stalwart CardDAV after a
+  /// successful send. Errors are silently caught so they never block the UI.
+  void _syncRecipientsToCardDav() {
+    try {
+      final baseUrl = dynamicUrlInterceptors.jmapUrl;
+      final username = mailboxDashBoardController.sessionCurrent?.username.value;
+
+      if (baseUrl == null || username == null) {
+        log('ComposerController::_syncRecipientsToCardDav: baseUrl or username is null, skipping');
+        return;
+      }
+
+      // Strip trailing /jmap (or similar path) to get the server root
+      final serverBase = baseUrl.replaceAll(RegExp(r'/jmap$'), '');
+
+      final allRecipients = <EmailAddress>{
+        ...listToEmailAddress,
+        ...listCcEmailAddress,
+        ...listBccEmailAddress,
+      };
+
+      if (allRecipients.isEmpty) return;
+
+      final cardDavApi = Get.find<CardDavApi>();
+
+      for (final recipient in allRecipients) {
+        final email = recipient.email;
+        if (email == null || email.isEmpty) continue;
+
+        final displayName = (recipient.name != null && recipient.name!.isNotEmpty)
+            ? recipient.name!
+            : email;
+
+        cardDavApi.saveContact(
+          baseUrl: serverBase,
+          username: username,
+          displayName: displayName,
+          email: email,
+        ).catchError((error) {
+          logWarning(
+            'ComposerController::_syncRecipientsToCardDav: '
+            'Failed to sync $email: $error',
+          );
+        });
+      }
+    } catch (e) {
+      logWarning('ComposerController::_syncRecipientsToCardDav: $e');
     }
   }
 
