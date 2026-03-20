@@ -1239,10 +1239,14 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
     if (blob != null && blob.calendarEventList.isNotEmpty) {
       final registry = CalendarEventCapabilityRegistry.instance;
       registry.cacheEvent(blob.blobId, blob.calendarEventList.first);
-      registry.setUserEmail(mailboxDashBoardController.ownEmailAddress.value);
+      registry.setUserEmail(
+        _identitySelected?.email ?? mailboxDashBoardController.ownEmailAddress.value,
+      );
       registry.setSentMailboxId(
         mailboxDashBoardController.mapDefaultMailboxIdByRole[PresentationMailbox.roleSent],
       );
+      registry.setIdentityId(_identitySelected?.id?.id.value);
+      registry.setLanguageCode(LocalizationService.getInitialLocale().languageCode);
     }
   }
 
@@ -1375,14 +1379,17 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
     || !session!.validateAcceptCounterCalendarEventCapability(accountId!);
 
   void _acceptCalendarEventAction(EmailId emailId) {
-    if (_acceptCalendarEventInteractor == null
-      || _displayingEventBlobId == null
-      || accountId == null
-      || session == null
-      || session!.validateCalendarEventCapability(accountId!).isAvailable == false
-    ) {
+    final hasInteractor = _acceptCalendarEventInteractor != null;
+    final hasBlobId = _displayingEventBlobId != null;
+    final hasAccount = accountId != null;
+    final hasSession = session != null;
+    final capAvailable = hasSession && hasAccount ? session!.validateCalendarEventCapability(accountId!).isAvailable : false;
+    print('[TRAKTION-RSVP] accept: interactor=$hasInteractor blobId=$hasBlobId account=$hasAccount session=$hasSession capAvailable=$capAvailable');
+    if (!hasInteractor || !hasBlobId || !hasAccount || !hasSession || !capAvailable) {
+      print('[TRAKTION-RSVP] accept BLOCKED - falling into failure');
       consumeState(Stream.value(Left(CalendarEventAcceptFailure())));
     } else {
+      print('[TRAKTION-RSVP] accept PROCEEDING with blobId=${_displayingEventBlobId!.value}');
       consumeState(_acceptCalendarEventInteractor!.execute(
         accountId!,
         {_displayingEventBlobId!},

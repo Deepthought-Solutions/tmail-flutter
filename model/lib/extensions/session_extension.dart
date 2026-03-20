@@ -197,7 +197,7 @@ extension SessionExtension on Session {
       return (isAvailable: true, calendarEventCapability: jamesCapability);
     }
 
-    final ietfCapability = getCapabilityProperties<EmptyCapability>(
+    final ietfCapability = getCapabilityProperties<DefaultCapability>(
       accountId,
       _ietfCalendarsParse);
     if (ietfCapability != null) {

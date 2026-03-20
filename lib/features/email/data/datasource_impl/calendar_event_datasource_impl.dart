@@ -125,6 +125,8 @@ class CalendarEventDataSourceImpl extends CalendarEventDataSource {
       attendeeEmail: userEmail,
       partstat: partstat,
       sentMailboxId: _registry.sentMailboxId,
+      identityId: _registry.identityId,
+      languageCode: _registry.languageCode,
     );
   }
 }

@@ -30,6 +30,14 @@ class CalendarEventCapabilityRegistry {
   void setSentMailboxId(MailboxId? id) => _sentMailboxId = id;
   MailboxId? get sentMailboxId => _sentMailboxId;
 
+  String? _identityId;
+  void setIdentityId(String? id) => _identityId = id;
+  String? get identityId => _identityId;
+
+  String _languageCode = 'en';
+  void setLanguageCode(String code) => _languageCode = code;
+  String get languageCode => _languageCode;
+
   void cacheEvent(Id blobId, CalendarEvent event) => _parsedEvents[blobId] = event;
   CalendarEvent? getEvent(Id blobId) => _parsedEvents[blobId];
 

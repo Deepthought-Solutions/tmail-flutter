@@ -3,8 +3,6 @@ import 'package:jmap_dart_client/http/http_client.dart';
 import 'package:jmap_dart_client/jmap/account_id.dart';
 import 'package:jmap_dart_client/jmap/core/capability/capability_identifier.dart';
 import 'package:jmap_dart_client/jmap/core/id.dart';
-import 'package:jmap_dart_client/jmap/core/reference_id.dart';
-import 'package:jmap_dart_client/jmap/core/reference_prefix.dart';
 import 'package:jmap_dart_client/jmap/core/request/request_invocation.dart';
 import 'package:jmap_dart_client/jmap/jmap_request.dart';
 import 'package:jmap_dart_client/jmap/mail/calendar/calendar_event.dart';
@@ -15,11 +13,6 @@ import 'package:jmap_dart_client/jmap/mail/email/email_body_value.dart';
 import 'package:jmap_dart_client/jmap/mail/email/keyword_identifier.dart';
 import 'package:jmap_dart_client/jmap/mail/email/set/set_email_method.dart';
 import 'package:jmap_dart_client/jmap/mail/email/set/set_email_response.dart';
-import 'package:jmap_dart_client/jmap/mail/email/submission/address.dart';
-import 'package:jmap_dart_client/jmap/mail/email/submission/email_submission.dart';
-import 'package:jmap_dart_client/jmap/mail/email/submission/envelope.dart';
-import 'package:jmap_dart_client/jmap/mail/email/submission/set/set_email_submission_method.dart';
-import 'package:jmap_dart_client/jmap/mail/email/submission/set/set_email_submission_response.dart';
 import 'package:jmap_dart_client/jmap/mail/mailbox/mailbox.dart';
 import 'package:uuid/uuid.dart';
 
@@ -39,6 +32,8 @@ class ImipReplySender {
     required String attendeeEmail,
     required String partstat,
     required MailboxId? sentMailboxId,
+    String? identityId,
+    String languageCode = 'en',
   }) async {
     final organizerEmail = _extractEmail(event.organizer?.mailto?.value);
     if (organizerEmail == null) {
@@ -81,7 +76,7 @@ class ImipReplySender {
     final calPartId = PartId('cal');
     final textPartId = PartId('text');
 
-    final statusLabel = _partstatLabel(partstat);
+    final statusLabel = _partstatLabel(partstat, languageCode);
     final textContent = '$statusLabel: $summary';
 
     final email = Email(
@@ -96,12 +91,10 @@ class ImipReplySender {
           EmailBodyPart(
             partId: textPartId,
             type: MediaType('text', 'plain'),
-            charset: 'UTF-8',
           ),
           EmailBodyPart(
             partId: calPartId,
             type: MediaType('text', 'calendar', {'method': 'REPLY'}),
-            charset: 'UTF-8',
           ),
         },
       ),
@@ -111,58 +104,76 @@ class ImipReplySender {
       },
     );
 
-    // Send via Email/set + EmailSubmission/set
-    final requestBuilder = JmapRequestBuilder(_httpClient, ProcessingInvocation());
+    // Step 1: Create the email via Email/set
     final emailCreateId = Id(_uuid.v1());
-
+    final requestBuilder1 = JmapRequestBuilder(_httpClient, ProcessingInvocation());
     final setEmailMethod = SetEmailMethod(accountId)
       ..addCreate(emailCreateId, email);
+    final setEmailInvocation = requestBuilder1.invocation(setEmailMethod);
 
-    final submissionCreateId = Id(_uuid.v1());
-    final emailSubmission = EmailSubmission(
-      emailId: EmailId(ReferenceId(ReferencePrefix.defaultPrefix, emailCreateId)),
-      envelope: Envelope(
-        Address(attendeeEmail),
-        {Address(organizerEmail)},
-      ),
-    );
-
-    final setSubmissionMethod = SetEmailSubmissionMethod(accountId)
-      ..addCreate(submissionCreateId, emailSubmission);
-
-    final setEmailInvocation = requestBuilder.invocation(setEmailMethod);
-    final setSubmissionInvocation = requestBuilder.invocation(setSubmissionMethod);
-
-    final response = await (requestBuilder
-        ..usings({
-          CapabilityIdentifier.jmapCore,
-          CapabilityIdentifier.jmapMail,
-          CapabilityIdentifier.jmapSubmission,
-        }))
+    final response1 = await (requestBuilder1
+        ..usings({CapabilityIdentifier.jmapCore, CapabilityIdentifier.jmapMail}))
       .build()
       .execute();
 
-    final setEmailResponse = response.parse<SetEmailResponse>(
+    final setEmailResponse = response1.parse<SetEmailResponse>(
       setEmailInvocation.methodCallId,
       SetEmailResponse.deserialize,
     );
 
-    final setSubmissionResponse = response.parse<SetEmailSubmissionResponse>(
-      setSubmissionInvocation.methodCallId,
-      SetEmailSubmissionResponse.deserialize,
-      methodName: setEmailInvocation.methodName,
-    );
-
-    final created = setEmailResponse?.created?[emailCreateId];
-    if (created == null) {
+    final createdEmail = setEmailResponse?.created?[emailCreateId];
+    if (createdEmail == null) {
       final errors = setEmailResponse?.notCreated;
       throw Exception('iMIP reply failed: email not created. Errors: $errors');
     }
 
-    final submitted = setSubmissionResponse?.created?[submissionCreateId];
-    if (submitted == null) {
-      final errors = setSubmissionResponse?.notCreated;
-      throw Exception('iMIP reply failed: submission failed. Errors: $errors');
+    final realEmailIdValue = createdEmail.id?.id.value;
+    if (realEmailIdValue == null) {
+      throw Exception('iMIP reply failed: created email has no ID');
+    }
+
+    // Step 2: Submit via raw JMAP (workaround for EmailId serialization bug)
+    final submissionCreateId = _uuid.v1();
+    final submitJson = {
+      'using': [
+        'urn:ietf:params:jmap:core',
+        'urn:ietf:params:jmap:mail',
+        'urn:ietf:params:jmap:submission',
+      ],
+      'methodCalls': [
+        ['EmailSubmission/set', {
+          'accountId': accountId.id.value,
+          'create': {
+            submissionCreateId: {
+              'emailId': realEmailIdValue,
+              if (identityId != null) 'identityId': identityId,
+              'envelope': {
+                'mailFrom': {'email': attendeeEmail},
+                'rcptTo': [{'email': organizerEmail}],
+              },
+            },
+          },
+        }, 'c0'],
+      ],
+    };
+
+    final submitData = await _httpClient.post(
+      '',
+      data: submitJson,
+    );
+
+    final methodResponses = submitData['methodResponses'] as List?;
+    if (methodResponses == null || methodResponses.isEmpty) {
+      throw Exception('iMIP reply failed: no response from submission');
+    }
+    final firstResponse = methodResponses[0] as List;
+    if (firstResponse[0] == 'error') {
+      throw Exception('iMIP reply failed: ${firstResponse[1]}');
+    }
+    final submissionResult = firstResponse[1] as Map<String, dynamic>;
+    final notCreated = submissionResult['notCreated'];
+    if (notCreated != null && (notCreated as Map).isNotEmpty) {
+      throw Exception('iMIP reply submission failed: $notCreated');
     }
   }
 
@@ -189,16 +200,14 @@ class ImipReplySender {
     return '${_formatDateTime(now)}Z';
   }
 
-  String _partstatLabel(String partstat) {
-    switch (partstat) {
-      case 'ACCEPTED':
-        return 'Accepted';
-      case 'TENTATIVE':
-        return 'Tentative';
-      case 'DECLINED':
-        return 'Declined';
-      default:
-        return partstat;
-    }
+  String _partstatLabel(String partstat, String lang) {
+    const labels = {
+      'fr': {'ACCEPTED': 'Accepté', 'TENTATIVE': 'Peut-être', 'DECLINED': 'Refusé'},
+      'en': {'ACCEPTED': 'Accepted', 'TENTATIVE': 'Maybe', 'DECLINED': 'Declined'},
+      'de': {'ACCEPTED': 'Akzeptiert', 'TENTATIVE': 'Vielleicht', 'DECLINED': 'Abgelehnt'},
+      'es': {'ACCEPTED': 'Aceptado', 'TENTATIVE': 'Quizás', 'DECLINED': 'Rechazado'},
+      'it': {'ACCEPTED': 'Accettato', 'TENTATIVE': 'Forse', 'DECLINED': 'Rifiutato'},
+    };
+    return labels[lang]?[partstat] ?? labels['en']?[partstat] ?? partstat;
   }
 }
