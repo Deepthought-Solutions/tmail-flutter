@@ -30,6 +30,8 @@ import 'package:tmail_ui_user/features/base/state/button_state.dart';
 import 'package:tmail_ui_user/features/download/domain/model/download_source_view.dart';
 import 'package:tmail_ui_user/features/download/domain/state/download_attachment_for_web_state.dart';
 import 'package:tmail_ui_user/features/email/domain/extensions/list_attachments_extension.dart';
+import 'package:tmail_ui_user/features/email/domain/utils/calendar_event_capability_helper.dart';
+import 'package:tmail_ui_user/features/email/domain/utils/calendar_event_capability_registry.dart';
 import 'package:tmail_ui_user/features/email/domain/model/detailed_email.dart';
 import 'package:tmail_ui_user/features/email/domain/model/event_action.dart';
 import 'package:tmail_ui_user/features/email/domain/model/mark_read_action.dart';
@@ -431,7 +433,8 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
 
   void _injectCalendarEventBindings(Session? session, AccountId? accountId) {
     if (session != null && accountId != null) {
-      if (CapabilityIdentifier.jamesCalendarEvent.isSupported(session, accountId)) {
+      if (CalendarEventCapabilityHelper.isParseSupported(session, accountId)) {
+        CalendarEventCapabilityRegistry.instance.configure(session, accountId);
         CalendarEventInteractorBindings().dependencies();
       }
     }
@@ -482,6 +485,17 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
   void _getEmailContentAction(EmailId emailId) {
     if (_currentEmailId != null && _threadDetailController?.cachedEmailLoaded[_currentEmailId!] != null) {
       final emailLoaded = _threadDetailController!.cachedEmailLoaded[_currentEmailId!]!;
+      consumeState(Stream.value(Right(GetEmailContentFromThreadCacheSuccess(
+        htmlEmailContent: emailLoaded.htmlContent,
+        emailCurrent: emailLoaded.emailCurrent,
+        attachments: emailLoaded.attachments,
+        inlineImages: emailLoaded.inlineImages,
+      ))));
+      return;
+    }
+
+    if (_currentEmailId != null && mailboxDashBoardController.preloadedEmailContent.containsKey(_currentEmailId!)) {
+      final emailLoaded = mailboxDashBoardController.preloadedEmailContent.remove(_currentEmailId!)!;
       consumeState(Stream.value(Right(GetEmailContentFromThreadCacheSuccess(
         htmlEmailContent: emailLoaded.htmlContent,
         emailCurrent: emailLoaded.emailCurrent,
@@ -1178,7 +1192,6 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
 
   bool _canParseCalendarEvent({required Set<Id> blobIds}) {
     return _isCalendarEventSupported &&
-      currentEmail?.hasCalendarEvent == true &&
       blobIds.isNotEmpty &&
       _parseCalendarEventInteractor != null;
   }
@@ -1186,7 +1199,7 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
   bool get _isCalendarEventSupported {
     return session != null &&
       accountId != null &&
-      CapabilityIdentifier.jamesCalendarEvent.isSupported(session!, accountId!);
+      CalendarEventCapabilityHelper.isParseSupported(session!, accountId!);
   }
 
   @visibleForTesting

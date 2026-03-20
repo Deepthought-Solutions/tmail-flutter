@@ -76,6 +76,8 @@ import 'package:tmail_ui_user/features/email/domain/usecases/move_to_mailbox_int
 import 'package:tmail_ui_user/features/email/domain/usecases/restore_deleted_message_interactor.dart';
 import 'package:tmail_ui_user/features/email/domain/usecases/unsubscribe_email_interactor.dart';
 import 'package:tmail_ui_user/features/email/presentation/action/email_ui_action.dart';
+import 'package:tmail_ui_user/features/email/presentation/model/email_loaded.dart';
+import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/controller/web_tab_badge_manager.dart';
 import 'package:tmail_ui_user/features/email/presentation/model/composer_arguments.dart';
 import 'package:tmail_ui_user/features/email/presentation/utils/email_utils.dart';
 import 'package:tmail_ui_user/features/email_recovery/presentation/model/email_recovery_arguments.dart';
@@ -322,6 +324,7 @@ class MailboxDashBoardController extends ReloadableController
 
   Map<Role, MailboxId> mapDefaultMailboxIdByRole = {};
   Map<MailboxId, PresentationMailbox> mapMailboxById = {};
+  final preloadedEmailContent = <EmailId, EmailLoaded>{};
   final emailsInCurrentMailbox = <PresentationEmail>[].obs;
   final listResultSearch = RxList<PresentationEmail>();
   PresentationMailbox? outboxMailbox;
@@ -951,6 +954,7 @@ class MailboxDashBoardController extends ReloadableController
 
   void setMapMailboxById(Map<MailboxId, PresentationMailbox> newMapMailboxById) {
     mapMailboxById = newMapMailboxById;
+    WebTabBadgeManager.updateBadge(mapMailboxById);
   }
 
   void setOutboxMailbox(PresentationMailbox? newOutbox) {

@@ -61,6 +61,7 @@ import 'package:tmail_ui_user/features/thread/domain/usecases/refresh_changes_em
 import 'package:tmail_ui_user/features/thread/domain/usecases/search_email_interactor.dart';
 import 'package:tmail_ui_user/features/thread/domain/usecases/search_more_email_interactor.dart';
 import 'package:tmail_ui_user/features/thread/presentation/extensions/handle_email_filter_extension.dart';
+import 'package:tmail_ui_user/features/thread/presentation/web_email_preload_manager.dart';
 import 'package:tmail_ui_user/features/thread/presentation/extensions/handle_keyboard_shortcut_actions_extension.dart';
 import 'package:tmail_ui_user/features/thread/presentation/extensions/list_presentation_email_extensions.dart';
 import 'package:tmail_ui_user/features/thread/presentation/extensions/refresh_thread_detail_extension.dart';
@@ -552,6 +553,14 @@ class ThreadController extends BaseController with EmailActionController {
 
       if (mailboxDashBoardController.isEmailListDisplayed) {
         refocusMailShortcutFocus();
+      }
+
+      if (_session != null && _accountId != null) {
+        WebEmailPreloadManager.preloadUnreadEmails(
+          session: _session!,
+          accountId: _accountId!,
+          emails: mailboxDashBoardController.emailsInCurrentMailbox,
+        );
       }
     }
   }

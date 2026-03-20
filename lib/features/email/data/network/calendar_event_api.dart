@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:core/utils/app_logger.dart';
 import 'package:jmap_dart_client/http/http_client.dart';
 import 'package:jmap_dart_client/jmap/account_id.dart';
+import 'package:jmap_dart_client/jmap/core/capability/capability_identifier.dart';
 import 'package:jmap_dart_client/jmap/core/id.dart';
 import 'package:jmap_dart_client/jmap/core/request/request_invocation.dart';
 import 'package:jmap_dart_client/jmap/core/response/response_object.dart';
@@ -27,34 +28,48 @@ class CalendarEventAPI {
 
   CalendarEventAPI(this._httpClient);
 
-  Future<List<BlobCalendarEvent>> parse(AccountId accountId, Set<Id> blobIds) async {
+  Future<List<BlobCalendarEvent>> parse(
+    AccountId accountId,
+    Set<Id> blobIds, {
+    Set<CapabilityIdentifier>? capabilityOverride,
+    bool supportsAttendance = true,
+  }) async {
     final requestBuilder = JmapRequestBuilder(_httpClient, ProcessingInvocation());
 
     // Parse
     final calendarEventParseMethod = CalendarEventParseMethod(accountId, blobIds);
     final calendarEventParseInvocation = requestBuilder.invocation(calendarEventParseMethod);
 
-    // Free/Busy query
-    final calendarEventAttendanceGetMethod = GetCalendarEventAttendanceMethod(
-      accountId,
-      blobIds.toList(),
-    );
-    final calendarEventAttendanceGetInvocation = requestBuilder.invocation(
-      calendarEventAttendanceGetMethod,
-    );
+    // Free/Busy query — only when the server supports it (James, not Stalwart)
+    RequestInvocation? calendarEventAttendanceGetInvocation;
+    if (supportsAttendance) {
+      final calendarEventAttendanceGetMethod = GetCalendarEventAttendanceMethod(
+        accountId,
+        blobIds.toList(),
+      );
+      calendarEventAttendanceGetInvocation = requestBuilder.invocation(
+        calendarEventAttendanceGetMethod,
+      );
+    }
 
+    final capabilities = capabilityOverride ?? calendarEventParseMethod.requiredCapabilities;
     final response = await (requestBuilder
-        ..usings(calendarEventParseMethod.requiredCapabilities))
+        ..usings(capabilities))
       .build()
       .execute();
 
     final calendarEventParseResponse = response.parse<CalendarEventParseResponse>(
       calendarEventParseInvocation.methodCallId,
       CalendarEventParseResponse.deserialize);
-    final calendarEventAttendanceGetResponse = _parseCalendarEventAttendance(
-      response,
-      calendarEventAttendanceGetInvocation.methodCallId,
-    );
+
+    GetCalendarEventAttendanceResponse? calendarEventAttendanceGetResponse;
+    if (calendarEventAttendanceGetInvocation != null) {
+      calendarEventAttendanceGetResponse = _parseCalendarEventAttendance(
+        response,
+        calendarEventAttendanceGetInvocation.methodCallId,
+      );
+    }
+
     final calendarBlobIdStatusMap = Map.fromEntries(
       (calendarEventAttendanceGetResponse?.list ?? []).map(
         (calendarEventAttendance) => MapEntry(
@@ -101,8 +116,9 @@ class CalendarEventAPI {
   Future<CalendarEventAcceptResponse> acceptEventInvitation(
     AccountId accountId,
     Set<Id> blobIds,
-    String? language
-  ) async {
+    String? language, {
+    Set<CapabilityIdentifier>? capabilityOverride,
+  }) async {
     final requestBuilder = JmapRequestBuilder(_httpClient, ProcessingInvocation());
     final calendarEventAcceptMethod = CalendarEventAcceptMethod(
       accountId,
@@ -111,7 +127,8 @@ class CalendarEventAPI {
       calendarEventAcceptMethod.addLanguage(language);
     }
     final calendarEventAcceptInvocation = requestBuilder.invocation(calendarEventAcceptMethod);
-    final response = await (requestBuilder..usings(calendarEventAcceptMethod.requiredCapabilities))
+    final capabilities = capabilityOverride ?? calendarEventAcceptMethod.requiredCapabilities;
+    final response = await (requestBuilder..usings(capabilities))
       .build()
       .execute();
 
@@ -133,8 +150,9 @@ class CalendarEventAPI {
   Future<CalendarEventMaybeResponse> maybeEventInvitation(
     AccountId accountId,
     Set<Id> blobIds,
-    String? language
-  ) async {
+    String? language, {
+    Set<CapabilityIdentifier>? capabilityOverride,
+  }) async {
     final requestBuilder = JmapRequestBuilder(_httpClient, ProcessingInvocation());
     final calendarEventMaybeMethod = CalendarEventMaybeMethod(
       accountId,
@@ -143,7 +161,8 @@ class CalendarEventAPI {
       calendarEventMaybeMethod.addLanguage(language);
     }
     final calendarEventMaybeInvocation = requestBuilder.invocation(calendarEventMaybeMethod);
-    final response = await (requestBuilder..usings(calendarEventMaybeMethod.requiredCapabilities))
+    final capabilities = capabilityOverride ?? calendarEventMaybeMethod.requiredCapabilities;
+    final response = await (requestBuilder..usings(capabilities))
       .build()
       .execute();
 
@@ -165,8 +184,9 @@ class CalendarEventAPI {
   Future<CalendarEventRejectResponse> rejectEventInvitation(
     AccountId accountId,
     Set<Id> blobIds,
-    String? language
-  ) async {
+    String? language, {
+    Set<CapabilityIdentifier>? capabilityOverride,
+  }) async {
     final requestBuilder = JmapRequestBuilder(_httpClient, ProcessingInvocation());
     final calendarEventRejectMethod = CalendarEventRejectMethod(
       accountId,
@@ -175,7 +195,8 @@ class CalendarEventAPI {
       calendarEventRejectMethod.addLanguage(language);
     }
     final calendarEventRejectInvocation = requestBuilder.invocation(calendarEventRejectMethod);
-    final response = await (requestBuilder..usings(calendarEventRejectMethod.requiredCapabilities))
+    final capabilities = capabilityOverride ?? calendarEventRejectMethod.requiredCapabilities;
+    final response = await (requestBuilder..usings(capabilities))
       .build()
       .execute();
 

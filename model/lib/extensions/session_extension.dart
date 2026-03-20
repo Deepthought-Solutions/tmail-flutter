@@ -182,15 +182,29 @@ extension SessionExtension on Session {
     }
   }
 
+  static final _ietfCalendarsParse = CapabilityIdentifier(
+    Uri.parse('urn:ietf:params:jmap:calendars:parse'),
+  );
+
   ({
     bool isAvailable,
     CalendarEventCapability? calendarEventCapability
   }) validateCalendarEventCapability(AccountId accountId) {
-    final capability = getCapabilityProperties<CalendarEventCapability>(
+    final jamesCapability = getCapabilityProperties<CalendarEventCapability>(
       accountId,
       CapabilityIdentifier.jamesCalendarEvent);
-    
-    return (isAvailable: capability != null, calendarEventCapability: capability);
+    if (jamesCapability != null) {
+      return (isAvailable: true, calendarEventCapability: jamesCapability);
+    }
+
+    final ietfCapability = getCapabilityProperties<EmptyCapability>(
+      accountId,
+      _ietfCalendarsParse);
+    if (ietfCapability != null) {
+      return (isAvailable: true, calendarEventCapability: null);
+    }
+
+    return (isAvailable: false, calendarEventCapability: null);
   }
 
   bool validateAcceptCounterCalendarEventCapability(AccountId accountId) {

@@ -242,7 +242,6 @@ class ThreadDetailController extends BaseController {
     scrollController = null;
     currentExpandedEmailId.value = null;
     currentEmailLoaded.value = null;
-    cachedEmailLoaded.clear();
     _threadGetDebouncer.value = null;
     isDisplayAllAttachments = false;
   }

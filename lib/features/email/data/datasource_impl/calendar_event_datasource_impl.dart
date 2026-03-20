@@ -6,6 +6,7 @@ import 'package:jmap_dart_client/jmap/mail/calendar/reply/calendar_event_maybe_r
 import 'package:jmap_dart_client/jmap/mail/calendar/reply/calendar_event_reject_response.dart';
 import 'package:tmail_ui_user/features/email/data/datasource/calendar_event_datasource.dart';
 import 'package:tmail_ui_user/features/email/data/network/calendar_event_api.dart';
+import 'package:tmail_ui_user/features/email/domain/utils/calendar_event_capability_registry.dart';
 import 'package:tmail_ui_user/features/email/presentation/model/blob_calendar_event.dart';
 import 'package:tmail_ui_user/main/exceptions/thrower/exception_thrower.dart';
 
@@ -16,20 +17,31 @@ class CalendarEventDataSourceImpl extends CalendarEventDataSource {
 
   CalendarEventDataSourceImpl(this._calendarEventAPI, this._exceptionThrower);
 
+  CalendarEventCapabilityRegistry get _registry =>
+      CalendarEventCapabilityRegistry.instance;
+
   @override
   Future<List<BlobCalendarEvent>> parse(AccountId accountId, Set<Id> blobIds) {
     return Future.sync(() async {
-      return await _calendarEventAPI.parse(accountId, blobIds);
+      return await _calendarEventAPI.parse(
+        accountId,
+        blobIds,
+        capabilityOverride: _registry.parseCapabilities,
+        supportsAttendance: _registry.supportsAttendance,
+      );
     }).catchError(_exceptionThrower.throwException);
   }
-  
+
   @override
   Future<CalendarEventAcceptResponse> acceptEventInvitation(
     AccountId accountId,
     Set<Id> blobIds,
     String? language) {
     return Future.sync(() async {
-      return await _calendarEventAPI.acceptEventInvitation(accountId, blobIds, language);
+      return await _calendarEventAPI.acceptEventInvitation(
+        accountId, blobIds, language,
+        capabilityOverride: _registry.replyCapabilities,
+      );
     }).catchError(_exceptionThrower.throwException);
   }
 
@@ -39,7 +51,10 @@ class CalendarEventDataSourceImpl extends CalendarEventDataSource {
     Set<Id> blobIds,
     String? language) {
     return Future.sync(() async {
-      return await _calendarEventAPI.maybeEventInvitation(accountId, blobIds, language);
+      return await _calendarEventAPI.maybeEventInvitation(
+        accountId, blobIds, language,
+        capabilityOverride: _registry.replyCapabilities,
+      );
     }).catchError(_exceptionThrower.throwException);
   }
 
@@ -49,10 +64,13 @@ class CalendarEventDataSourceImpl extends CalendarEventDataSource {
     Set<Id> blobIds,
     String? language) {
     return Future.sync(() async {
-      return await _calendarEventAPI.rejectEventInvitation(accountId, blobIds, language);
+      return await _calendarEventAPI.rejectEventInvitation(
+        accountId, blobIds, language,
+        capabilityOverride: _registry.replyCapabilities,
+      );
     }).catchError(_exceptionThrower.throwException);
   }
-  
+
   @override
   Future<CalendarEventAcceptResponse> acceptCounterEvent(
     AccountId accountId,

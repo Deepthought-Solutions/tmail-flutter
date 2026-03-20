@@ -17,6 +17,7 @@ import 'package:model/email/attachment.dart';
 import 'package:tmail_ui_user/features/download/domain/state/download_attachment_for_web_state.dart';
 import 'package:tmail_ui_user/features/download/domain/state/download_and_get_html_content_from_attachment_state.dart';
 import 'package:tmail_ui_user/features/email/presentation/model/email_unsubscribe.dart';
+import 'package:tmail_ui_user/features/email/domain/utils/calendar_event_capability_helper.dart';
 import 'package:tmail_ui_user/features/thread/domain/constants/thread_constants.dart';
 import 'package:tmail_ui_user/main/error/capability_validator.dart';
 import 'package:tmail_ui_user/main/routes/route_utils.dart';
@@ -33,7 +34,7 @@ class EmailUtils {
   EmailUtils._();
 
   static Properties getPropertiesForEmailGetMethod(Session session, AccountId accountId) {
-    if (CapabilityIdentifier.jamesCalendarEvent.isSupported(session, accountId)) {
+    if (CalendarEventCapabilityHelper.isParseSupported(session, accountId)) {
       return ThreadConstants.propertiesCalendarEvent;
     } else {
       return ThreadConstants.propertiesDefault;
@@ -41,7 +42,7 @@ class EmailUtils {
   }
 
   static Properties getPropertiesForEmailChangeMethod(Session session, AccountId accountId) {
-    if (CapabilityIdentifier.jamesCalendarEvent.isSupported(session, accountId)) {
+    if (CalendarEventCapabilityHelper.isParseSupported(session, accountId)) {
       return ThreadConstants.propertiesCalendarEvent;
     } else {
       return ThreadConstants.propertiesUpdatedDefault;
