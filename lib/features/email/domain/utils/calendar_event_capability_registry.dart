@@ -1,6 +1,9 @@
 import 'package:jmap_dart_client/jmap/account_id.dart';
 import 'package:jmap_dart_client/jmap/core/capability/capability_identifier.dart';
+import 'package:jmap_dart_client/jmap/core/id.dart';
 import 'package:jmap_dart_client/jmap/core/session/session.dart';
+import 'package:jmap_dart_client/jmap/mail/calendar/calendar_event.dart';
+import 'package:jmap_dart_client/jmap/mail/mailbox/mailbox.dart';
 import 'package:tmail_ui_user/features/email/domain/utils/calendar_event_capability_helper.dart';
 
 class CalendarEventCapabilityRegistry {
@@ -12,11 +15,23 @@ class CalendarEventCapabilityRegistry {
 
   bool _isJames = false;
   bool _isIetf = false;
+  String? _userEmail;
+  MailboxId? _sentMailboxId;
+  final Map<Id, CalendarEvent> _parsedEvents = {};
 
   void configure(Session session, AccountId accountId) {
     _isJames = CalendarEventCapabilityHelper.isJamesSupported(session, accountId);
     _isIetf = CalendarEventCapabilityHelper.isIetfSupported(session, accountId);
   }
+
+  void setUserEmail(String email) => _userEmail = email;
+  String? get userEmail => _userEmail;
+
+  void setSentMailboxId(MailboxId? id) => _sentMailboxId = id;
+  MailboxId? get sentMailboxId => _sentMailboxId;
+
+  void cacheEvent(Id blobId, CalendarEvent event) => _parsedEvents[blobId] = event;
+  CalendarEvent? getEvent(Id blobId) => _parsedEvents[blobId];
 
   bool get isJames => _isJames;
   bool get isIetf => _isIetf && !_isJames;

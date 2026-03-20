@@ -8,6 +8,7 @@ import 'package:tmail_ui_user/features/email/data/datasource_impl/calendar_event
 import 'package:tmail_ui_user/features/email/data/datasource_impl/html_datasource_impl.dart';
 import 'package:tmail_ui_user/features/email/data/local/html_analyzer.dart';
 import 'package:tmail_ui_user/features/email/data/network/calendar_event_api.dart';
+import 'package:tmail_ui_user/features/email/data/network/imip_reply_sender.dart';
 import 'package:tmail_ui_user/features/email/data/repository/calendar_event_repository_impl.dart';
 import 'package:tmail_ui_user/features/email/domain/repository/calendar_event_repository.dart';
 import 'package:tmail_ui_user/features/email/domain/usecases/calendar_event_accept_interactor.dart';
@@ -29,9 +30,11 @@ class CalendarEventInteractorBindings extends InteractorsBindings {
   @override
   void bindingsDataSourceImpl() {
     Get.lazyPut(() => CalendarEventAPI(Get.find<HttpClient>()));
+    Get.lazyPut(() => ImipReplySender(Get.find<HttpClient>()));
     Get.lazyPut(() => CalendarEventDataSourceImpl(
       Get.find<CalendarEventAPI>(),
-      Get.find<RemoteExceptionThrower>()));
+      Get.find<RemoteExceptionThrower>(),
+      Get.find<ImipReplySender>()));
     Get.lazyPut(() => HtmlDataSourceImpl(
       Get.find<HtmlAnalyzer>(),
       Get.find<CacheExceptionThrower>()));

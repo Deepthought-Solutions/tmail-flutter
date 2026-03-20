@@ -157,24 +157,6 @@ class CalendarEventInformationWidget extends StatelessWidget {
                 openEmailAddressDetailAction: openEmailAddressDetailAction,
               ),
             ),
-          if (calendarEvent.isDisplayedWarningMessage(ownEmailAddress))
-            Padding(
-              padding: EdgeInsetsDirectional.only(
-                top: CalendarEventInformationWidgetStyles.fieldTopPadding,
-                start: isPortraitMobile ? 0 : 100,
-              ),
-              child: Text(
-                AppLocalizations
-                    .of(context)
-                    .youAreNotInvitedToThisEventPleaseContactTheOrganizer,
-                style: ThemeUtils.defaultTextStyleInterFont.copyWith(
-                  fontSize: CalendarEventInformationWidgetStyles
-                      .invitationMessageTextSize,
-                  fontWeight: FontWeight.w500,
-                  color: AppColor.colorMaybeEventActionText,
-                ),
-              ),
-            ),
           if (eventActionTypes.isNotEmpty)
             CalendarEventActionButtonWidget(
               eventActions: eventActionTypes,

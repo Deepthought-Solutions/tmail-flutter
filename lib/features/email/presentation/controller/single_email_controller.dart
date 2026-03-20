@@ -1233,6 +1233,17 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
     emailLoadedViewState.value = Right<Failure, Success>(success);
     blobCalendarEvent.value = success.blobCalendarEventList.firstOrNull;
     updateAttendanceStatus(success);
+
+    // Cache event data for iMIP fallback reply
+    final blob = success.blobCalendarEventList.firstOrNull;
+    if (blob != null && blob.calendarEventList.isNotEmpty) {
+      final registry = CalendarEventCapabilityRegistry.instance;
+      registry.cacheEvent(blob.blobId, blob.calendarEventList.first);
+      registry.setUserEmail(mailboxDashBoardController.ownEmailAddress.value);
+      registry.setSentMailboxId(
+        mailboxDashBoardController.mapDefaultMailboxIdByRole[PresentationMailbox.roleSent],
+      );
+    }
   }
 
   void _handleParseCalendarEventFailure(ParseCalendarEventFailure failure) {

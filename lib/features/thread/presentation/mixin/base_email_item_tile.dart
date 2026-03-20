@@ -63,10 +63,10 @@ mixin BaseEmailItemTile {
   }
 
   FontWeight buildFontForReadEmail(PresentationEmail email) =>
-      !email.hasRead ? FontWeight.w600 : FontWeight.normal;
+      !email.hasRead ? FontWeight.w600 : FontWeight.w400;
 
   Color buildTextColorForReadEmail(PresentationEmail email) =>
-      email.hasRead ? AppColor.steelGray400 : Colors.black;
+      email.hasRead ? AppColor.steelGray600 : Colors.black;
 
   bool hasMailboxLabel(bool isSearchEmailRunning, PresentationEmail email) {
     return isSearchEmailRunning && email.mailboxContain != null;
@@ -93,7 +93,7 @@ mixin BaseEmailItemTile {
         wordToStyle: query?.value ?? '',
         styleOrigin: !email.hasRead
           ? ThemeUtils.textStyleBodyContact(color: Colors.black)
-          : ThemeUtils.textStyleBodyBody2(color: AppColor.steelGray400),
+          : ThemeUtils.textStyleBodyBody2(color: AppColor.steelGray600),
         styleWord: !email.hasRead
           ? ThemeUtils.textStyleBodyContact(
               color: Colors.black,
@@ -109,7 +109,7 @@ mixin BaseEmailItemTile {
         informationSender(email, mailbox),
         style: !email.hasRead
           ? ThemeUtils.textStyleBodyContact(color: Colors.black)
-          : ThemeUtils.textStyleBodyBody2(color: AppColor.steelGray400)
+          : ThemeUtils.textStyleBodyBody2(color: AppColor.steelGray600)
       );
     }
   }
@@ -160,7 +160,7 @@ mixin BaseEmailItemTile {
         preMarkedText: email.sanitizedSearchSnippetPreview,
         ensureHighlightVisible: true,
         styleOrigin: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppColor.steelGray400,
+          color: AppColor.steelGray600,
         ),
         styleWord: Theme.of(context).textTheme.bodySmall?.copyWith(
           backgroundColor: Colors.amberAccent[200],
@@ -170,7 +170,7 @@ mixin BaseEmailItemTile {
       return TextOverflowBuilder(
         email.getPartialContent(),
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppColor.steelGray400,
+          color: AppColor.steelGray600,
         )
       );
     }

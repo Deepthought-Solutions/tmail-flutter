@@ -195,9 +195,9 @@ extension CalendarEventExtension on CalendarEvent {
     }
   }
 
-  DateTime? get localStartDate => startUtcDate?.value.toLocal();
+  DateTime? get localStartDate => startUtcDate?.value.toLocal() ?? startDate;
 
-  DateTime? get localEndDate => endUtcDate?.value.toLocal();
+  DateTime? get localEndDate => endUtcDate?.value.toLocal() ?? endDate;
 
   String get monthStartDateAsString {
     if (localStartDate != null) {
@@ -386,9 +386,7 @@ extension CalendarEventExtension on CalendarEvent {
   bool isDisplayedEventReplyAction(String ownerEmailAddress) =>
       method != null &&
       _methodIsRepliable &&
-      organizer != null &&
-      participants?.isNotEmpty == true &&
-      userIsListedInParticipants(ownerEmailAddress);
+      organizer != null;
 
   bool get _methodIsRepliable => 
     method == EventMethod.request ||
