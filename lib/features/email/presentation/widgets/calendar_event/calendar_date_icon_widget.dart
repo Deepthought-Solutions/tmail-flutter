@@ -62,7 +62,10 @@ class CalendarDateIconWidget extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(CalendarIconWidgetStyles.bodyContentPadding),
+            padding: const EdgeInsets.symmetric(
+              vertical: CalendarIconWidgetStyles.bodyDayVerticalPadding,
+              horizontal: CalendarIconWidgetStyles.bodyContentPadding,
+            ),
             child: Text(
               calendarEvent.dayStartDateAsString,
               style: ThemeUtils.defaultTextStyleInterFont.copyWith(

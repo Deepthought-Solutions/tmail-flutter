@@ -221,6 +221,7 @@ extension SessionExtension on Session {
   ) {
     final validation = validateCalendarEventCapability(accountId);
     if (!validation.isAvailable) return null;
+    if (validation.calendarEventCapability == null) return null;
 
     final supportedLanguages = validation.calendarEventCapability!.replySupportedLanguage;
     if (supportedLanguages == null) return null;

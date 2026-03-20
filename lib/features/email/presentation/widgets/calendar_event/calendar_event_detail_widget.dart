@@ -84,9 +84,15 @@ class CalendarEventDetailWidget extends StatelessWidget {
     }
 
     return '''
-      $descriptions
-      <br>
-      $emailContentTrimmed
+      <style>
+        * { color: #333333 !important; }
+        a { color: #1a73e8 !important; }
+      </style>
+      <div style="color: #333333;">
+        $descriptions
+        <br>
+        $emailContentTrimmed
+      </div>
     ''';
   }
 }

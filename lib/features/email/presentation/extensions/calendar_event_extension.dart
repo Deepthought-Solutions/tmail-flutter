@@ -225,11 +225,12 @@ extension CalendarEventExtension on CalendarEvent {
 
   String get weekDayStartDateAsString {
     if (localStartDate != null) {
-      return date_format.formatDate(
+      final full = date_format.formatDate(
         localStartDate!,
-        [date_format.D],
+        [date_format.DD],
         locale: AppUtils.getCurrentDateLocale()
       );
+      return full.length > 3 ? '${full.substring(0, 3)}.' : full;
     } else {
       return '';
     }
