@@ -45,7 +45,7 @@ class ImipReplySender {
       throw Exception('Cannot send iMIP reply: no organizer email');
     }
 
-    final uid = event.eventId?.value ?? '';
+    final uid = event.eventId?.id ?? '';
     final summary = event.title ?? 'Event';
     final dtStart = _formatDateTime(event.startDate);
     final dtEnd = event.endDate != null
