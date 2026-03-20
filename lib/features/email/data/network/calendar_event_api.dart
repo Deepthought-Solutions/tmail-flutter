@@ -60,7 +60,7 @@ class CalendarEventAPI {
 
     final calendarEventParseResponse = response.parse<CalendarEventParseResponse>(
       calendarEventParseInvocation.methodCallId,
-      CalendarEventParseResponse.deserialize);
+      _deserializeParseResponse);
 
     GetCalendarEventAttendanceResponse? calendarEventAttendanceGetResponse;
     if (calendarEventAttendanceGetInvocation != null) {
@@ -97,6 +97,89 @@ class CalendarEventAPI {
     } else {
       throw NotParsableCalendarEventException();
     }
+  }
+
+  static CalendarEventParseResponse _deserializeParseResponse(Map<String, dynamic> json) {
+    final parsed = json['parsed'];
+    if (parsed is Map<String, dynamic>) {
+      for (final entry in parsed.entries) {
+        if (entry.value is List) {
+          for (final event in entry.value) {
+            if (event is Map<String, dynamic>) {
+              _normalizeCalendarEvent(event);
+            }
+          }
+        }
+      }
+    }
+    return CalendarEventParseResponse.deserialize(json);
+  }
+
+  static void _normalizeCalendarEvent(Map<String, dynamic> event) {
+    // method: lowercase → uppercase (Stalwart vs James)
+    if (event['method'] is String) {
+      event['method'] = (event['method'] as String).toUpperCase();
+    }
+
+    // participants: Stalwart returns Map<uuid, Participant>, James expects List<Attendee>
+    final participants = event['participants'];
+    if (participants is Map<String, dynamic>) {
+      final attendeeList = <Map<String, dynamic>>[];
+      for (final participant in participants.values) {
+        if (participant is Map<String, dynamic>) {
+          final attendee = <String, dynamic>{};
+
+          // calendarAddress → mailto (strip mailto: prefix)
+          final addr = participant['calendarAddress'] as String?;
+          if (addr != null) {
+            attendee['mailto'] = addr.startsWith('mailto:')
+                ? addr.substring(7)
+                : addr;
+          }
+
+          // name
+          if (participant['name'] != null) {
+            attendee['name'] = participant['name'];
+          }
+
+          // roles Map<String,bool> → single role string
+          final roles = participant['roles'];
+          if (roles is Map<String, dynamic>) {
+            final roleKey = roles.keys.firstOrNull;
+            if (roleKey != null) {
+              attendee['role'] = roleKey.toLowerCase();
+            }
+          }
+
+          // participationStatus
+          if (participant['participationStatus'] != null) {
+            attendee['participationStatus'] = participant['participationStatus'];
+          }
+
+          attendeeList.add(attendee);
+        }
+      }
+      event['participants'] = attendeeList;
+    }
+
+    // organizer: Stalwart uses organizerCalendarAddress, James uses organizer object
+    if (event['organizer'] == null && event['organizerCalendarAddress'] is String) {
+      final addr = event['organizerCalendarAddress'] as String;
+      event['organizer'] = {
+        'mailto': addr.startsWith('mailto:') ? addr.substring(7) : addr,
+      };
+    }
+
+    // locations: Stalwart returns Map<uuid, Location>, extract first as string
+    final locations = event['locations'];
+    if (event['location'] == null && locations is Map<String, dynamic>) {
+      final firstLoc = locations.values.firstOrNull;
+      if (firstLoc is Map<String, dynamic> && firstLoc['name'] != null) {
+        event['location'] = firstLoc['name'];
+      }
+    }
+
+    // status: keep as-is (enum uses lowercase: confirmed, cancelled, tentative)
   }
 
   GetCalendarEventAttendanceResponse? _parseCalendarEventAttendance(
