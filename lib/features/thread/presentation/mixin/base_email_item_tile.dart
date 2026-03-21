@@ -1,4 +1,7 @@
 
+import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
+
 import 'package:core/presentation/constants/constants_ui.dart';
 import 'package:core/presentation/extensions/color_extension.dart';
 import 'package:core/presentation/resources/image_paths.dart';
@@ -224,6 +227,17 @@ mixin BaseEmailItemTile {
         fit: BoxFit.fill);
   }
 
+  String? _extractBaseDomain(PresentationEmail email) {
+    final addr = email.from?.firstOrNull?.email;
+    if (addr == null || !addr.contains('@')) return null;
+    final full = addr.split('@').last.toLowerCase();
+    final parts = full.split('.');
+    if (parts.length > 2) {
+      return parts.sublist(parts.length - 2).join('.');
+    }
+    return full;
+  }
+
   Widget buildIconAvatarText(
     PresentationEmail email,
     {
@@ -231,25 +245,114 @@ mixin BaseEmailItemTile {
       TextStyle? textStyle
     }
   ) {
-    return Container(
-      width: iconSize ?? ItemEmailTileStyles.avatarIconSize,
-      height: iconSize ?? ItemEmailTileStyles.avatarIconSize,
+    final size = iconSize ?? ItemEmailTileStyles.avatarIconSize;
+    final domain = _extractBaseDomain(email);
+    final avatarUrl = domain != null
+        ? 'https://webmail.taino.fr/favicon-proxy/$domain'
+        : null;
+
+    final fallback = Container(
+      width: size,
+      height: size,
       alignment: Alignment.center,
-      decoration: ShapeDecoration(
-        shape: const CircleBorder(),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: const [0.0, 1.0],
-          colors: email.avatarColors
-        )
+          colors: email.avatarColors,
+        ),
       ),
       child: Text(
         email.getAvatarText(),
         style: textStyle ?? ThemeUtils.textStyleHeadingHeadingSmall(
           color: Colors.white,
         ),
-      )
+      ),
+    );
+
+    if (avatarUrl == null) return fallback;
+
+    final cacheKey = 'favicon:$domain';
+    final cached = html.window.localStorage[cacheKey];
+
+    // Cache says no favicon for this domain
+    if (cached == 'none') return fallback;
+
+    final colors = email.avatarColors;
+    final c1 = '#${colors.first.value.toRadixString(16).substring(2)}';
+    final c2 = '#${colors.last.value.toRadixString(16).substring(2)}';
+    final initials = email.getAvatarText();
+
+    final viewType = 'favicon-$domain';
+    ui_web.platformViewRegistry.registerViewFactory(
+      viewType,
+      (int viewId) {
+        // Cached data URL → render immediately, 0 network requests
+        if (cached != null) {
+          final img = html.ImageElement()
+            ..src = cached
+            ..style.width = '100%'
+            ..style.height = '100%'
+            ..style.objectFit = 'cover'
+            ..style.borderRadius = '50%'
+            ..style.background = 'white';
+          return img;
+        }
+
+        // No cache → fetch from proxy, store in localStorage
+        final container = html.DivElement()
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.borderRadius = '50%'
+          ..style.overflow = 'hidden'
+          ..style.background = 'linear-gradient(to bottom, $c1, $c2)'
+          ..style.display = 'flex'
+          ..style.alignItems = 'center'
+          ..style.justifyContent = 'center'
+          ..style.fontSize = '12px'
+          ..style.fontWeight = '600'
+          ..style.color = 'white'
+          ..style.fontFamily = 'Inter, sans-serif'
+          ..text = initials;
+
+        html.HttpRequest.request(avatarUrl!, responseType: 'blob').then((xhr) {
+          if (xhr.status != 200) throw Exception('not found');
+          final blob = xhr.response as html.Blob;
+          if (blob.size < 50) throw Exception('too small');
+          final reader = html.FileReader();
+          reader.onLoadEnd.listen((_) {
+            final dataUrl = reader.result as String?;
+            if (dataUrl != null && dataUrl.startsWith('data:')) {
+              html.window.localStorage[cacheKey] = dataUrl;
+              container.text = '';
+              container.style.background = 'white';
+              final img = html.ImageElement()
+                ..src = dataUrl
+                ..style.width = '100%'
+                ..style.height = '100%'
+                ..style.objectFit = 'cover'
+                ..style.borderRadius = '50%';
+              container.append(img);
+            }
+          });
+          reader.readAsDataUrl(blob);
+        }).catchError((_) {
+          html.window.localStorage[cacheKey] = 'none';
+        });
+
+        return container;
+      },
+      isVisible: true,
+    );
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: HtmlElementView(
+        key: ValueKey(viewType),
+        viewType: viewType,
+      ),
     );
   }
 

@@ -110,6 +110,25 @@ class _DesktopListEmailActionHoverWidgetState
             widget.presentationEmail,
           ),
         ),
+        TMailButtonWidget.fromIcon(
+          icon: widget.presentationEmail.hasStarred
+              ? _imagePaths.icStar
+              : _imagePaths.icUnStar,
+          iconColor: ItemEmailTileStyles.actionIconHoverColor,
+          iconSize: _getIconSize(),
+          padding: _getPaddingIcon(),
+          margin: _getMarginIcon(),
+          backgroundColor: Colors.transparent,
+          tooltipMessage: widget.presentationEmail.hasStarred
+              ? AppLocalizations.of(context).not_starred
+              : AppLocalizations.of(context).mark_as_starred,
+          onTapActionCallback: () => widget.emailActionClick?.call(
+            widget.presentationEmail.hasStarred
+                ? EmailActionType.unMarkAsStarred
+                : EmailActionType.markAsStarred,
+            widget.presentationEmail,
+          ),
+        ),
       ],
       if (_shouldShowPopupMenu) ...[
         TMailButtonWidget.fromIcon(

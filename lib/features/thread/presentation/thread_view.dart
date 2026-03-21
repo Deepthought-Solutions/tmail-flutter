@@ -79,7 +79,9 @@ class ThreadView extends GetWidget<ThreadController>
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (!controller.responsiveUtils.isWebDesktop(context))
+                    if (!(PlatformInfo.isWeb &&
+                        View.of(context).physicalSize.width /
+                        View.of(context).devicePixelRatio >= ResponsiveUtils.minDesktopWidth))
                       ... [
                         Obx(() {
                           return MobileAppBarThreadWidget(

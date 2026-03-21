@@ -1,3 +1,5 @@
+import 'dart:html' as html;
+
 import 'package:core/core.dart';
 import 'package:cozy/cozy_config_manager/cozy_config_manager.dart';
 import 'package:flutter/gestures.dart';
@@ -64,8 +66,28 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
 
   MailboxDashBoardView({Key? key}) : super(key: key);
 
+  static bool _splitViewInitialized = false;
+
+  void _initSplitView() {
+    if (!_splitViewInitialized) {
+      _splitViewInitialized = true;
+      final stored = html.window.localStorage['twake:splitView'];
+      controller.splitViewEnabled.value = stored != 'false';
+    }
+  }
+
+  void _toggleSplitView() {
+    final newVal = !controller.splitViewEnabled.value;
+    controller.splitViewEnabled.value = newVal;
+    html.window.localStorage['twake:splitView'] = newVal.toString();
+    if (!newVal && controller.dashboardRoute.value == DashboardRoutes.threadDetailed) {
+      controller.dashboardRoute.value = DashboardRoutes.thread;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    _initSplitView();
     return Portal(
       child: Stack(children: [
         ResponsiveWidget(
@@ -131,7 +153,7 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
                                 calendarUrl: AppConfig.calendarUrl!,
                               ),
                             Expanded(child: SizedBox(
-                              width: ResponsiveUtils.defaultSizeMenu,
+                              width: 210,
                               child: Obx(() {
                                 if (controller.searchMailboxActivated.isTrue) {
                                   return const SearchMailboxView(
@@ -294,7 +316,27 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
                               _buildListButtonQuickSearchFilter(context),
                               Expanded(
                                 child: Obx(() {
-                                  switch(controller.dashboardRoute.value) {
+                                  final isSplit = controller.splitViewEnabled.value;
+                                  final route = controller.dashboardRoute.value;
+
+                                  if (isSplit) {
+                                    return Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 420,
+                                          child: _buildThreadViewForWebDesktop(context),
+                                        ),
+                                        const VerticalDivider(width: 1),
+                                        Expanded(
+                                          child: route == DashboardRoutes.threadDetailed
+                                              ? const ThreadDetailView()
+                                              : const EmailViewEmptyWidget(),
+                                        ),
+                                      ],
+                                    );
+                                  }
+
+                                  switch(route) {
                                     case DashboardRoutes.thread:
                                       return _buildThreadViewForWebDesktop(context);
                                     case DashboardRoutes.threadDetailed:
@@ -450,64 +492,51 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
         } else {
           return Padding(
             padding: const EdgeInsetsDirectional.only(start: 16),
-            child: Tooltip(
-              message: AppLocalizations.of(context).selectAllMessagesOfThisPage,
-              child: ElevatedButton.icon(
-                onPressed: controller.selectAllEmailAction,
-                icon: SvgPicture.asset(
-                  controller.imagePaths.icSelectAll,
-                  width: 16,
-                  height: 16,
-                  fit: BoxFit.fill,
-                  colorFilter: AppColor.colorFilterMessageIcon.asFilter(),
-                ),
-                label: Text(
-                  AppLocalizations.of(context).selectAllMessagesOfThisPage,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: ThemeUtils.defaultTextStyleInterFont.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.normal,
-                    color: AppColor.colorFilterMessageTitle,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColor.colorFilterMessageButton.withValues(alpha: 0.6),
-                  shadowColor: Colors.transparent,
-                  padding: const EdgeInsetsDirectional.symmetric(horizontal: 12),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
-                  elevation: 0.0,
-                  foregroundColor: AppColor.colorTextButtonHeaderThread,
-                  maximumSize: const Size.fromWidth(250),
-                  fixedSize: const Size.fromHeight(34),
-                  textStyle: ThemeUtils.defaultTextStyleInterFont.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.normal,
-                    color: AppColor.colorFilterMessageTitle
-                  ),
-                ),
-              ),
+            child: TMailButtonWidget.fromIcon(
+              key: const Key('select_all_messages_button'),
+              icon: controller.imagePaths.icSelectAll,
+              borderRadius: 10,
+              iconSize: 16,
+              backgroundColor: AppColor.colorFilterMessageButton.withValues(alpha: 0.6),
+              tooltipMessage: AppLocalizations.of(context).selectAllMessagesOfThisPage,
+              onTapActionCallback: controller.selectAllEmailAction,
             ),
           );
         }
       }),
       Obx(() {
         final filterMessageCurrent = controller.filterMessageOption.value;
+        final isFilterActive = filterMessageCurrent != FilterMessageOption.all;
 
         if (controller.validateNoEmailsInTrashAndSpamFolder() ||
             controller.searchController.isSearchEmailRunning) {
           return const SizedBox.shrink();
         } else {
           return Padding(
-            padding: FilterMessageButtonStyle.buttonMargin,
-            child: FilterMessageButton(
-              filterMessageOption: filterMessageCurrent,
-              imagePaths: controller.imagePaths,
-              isSelected: filterMessageCurrent != FilterMessageOption.all,
-              onSelectFilterMessageOptionAction: _onSelectFilterMessageOptionAction,
-              onDeleteFilterMessageOptionAction: (_) => _onDeleteFilterMessageOptionAction(),
+            padding: const EdgeInsetsDirectional.only(start: 16),
+            child: Material(
+              color: AppColor.colorFilterMessageButton.withValues(alpha: 0.6),
+              borderRadius: const BorderRadius.all(Radius.circular(10)),
+              child: InkWell(
+                borderRadius: const BorderRadius.all(Radius.circular(10)),
+                onTapDown: (details) {
+                  final position = RelativeRect.fromLTRB(
+                    details.globalPosition.dx,
+                    details.globalPosition.dy,
+                    details.globalPosition.dx,
+                    details.globalPosition.dy,
+                  );
+                  _onSelectFilterMessageOptionAction(context, filterMessageCurrent, position);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.filter_list_rounded,
+                    size: 16,
+                    color: isFilterActive ? AppColor.primaryColor : AppColor.colorFilterMessageIcon,
+                  ),
+                ),
+              ),
             ),
           );
         }
@@ -540,7 +569,30 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
         } else {
           return const SizedBox.shrink();
         }
-      })
+      }),
+      const Spacer(),
+      Obx(() {
+        final isSplit = controller.splitViewEnabled.value;
+        return Tooltip(
+          message: isSplit ? 'List view' : 'Split view',
+          child: Material(
+            color: AppColor.colorFilterMessageButton.withValues(alpha: 0.6),
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
+            child: InkWell(
+              borderRadius: const BorderRadius.all(Radius.circular(10)),
+              onTap: _toggleSplitView,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  isSplit ? Icons.vertical_split_rounded : Icons.view_list_rounded,
+                  size: 16,
+                  color: AppColor.colorFilterMessageIcon,
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
     ]);
   }
 

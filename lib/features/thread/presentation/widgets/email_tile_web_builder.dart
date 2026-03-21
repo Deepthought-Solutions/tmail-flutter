@@ -210,6 +210,10 @@ class _EmailTileBuilderState extends State<EmailTileBuilder>  with BaseEmailItem
               EmailActionType.preview,
               widget.presentationEmail
             ),
+            onLongPress: () => widget.emailActionClick?.call(
+              EmailActionType.selection,
+              widget.presentationEmail
+            ),
             onHover: (value) => _hoverNotifier.value = value,
             hoverColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.08),
             borderRadius: const BorderRadius.all(Radius.circular(14)),
@@ -218,51 +222,33 @@ class _EmailTileBuilderState extends State<EmailTileBuilder>  with BaseEmailItem
               decoration: _getDecorationItem(),
               alignment: Alignment.center,
               child: Row(children: [
-                ValueListenableBuilder(
-                  valueListenable: _hoverNotifier,
-                  builder: (_, isHovered, __) {
-                    return TMailButtonWidget.fromIcon(
-                      icon: isEmailSelected
-                          ? imagePaths.icCheckboxSelected
-                          : imagePaths.icCheckboxUnselected,
-                      iconColor: isHovered || isEmailSelected
-                          ? AppColor.primaryColor
-                          : AppColor.colorEmailTileCheckboxUnhover,
-                      iconSize: 20,
-                      padding: const EdgeInsets.all(10),
-                      margin: const EdgeInsetsDirectional.only(start: 4),
-                      backgroundColor: Colors.transparent,
-                      tooltipMessage: isEmailSelected
-                          ? AppLocalizations.of(context).selected
-                          : AppLocalizations.of(context).notSelected,
-                      onTapActionCallback: () {
-                        widget.emailActionClick?.call(
-                            EmailActionType.selection,
-                            widget.presentationEmail
-                        );
-                      },
-                    );
-                  },
-                ),
-                TMailButtonWidget.fromIcon(
-                  icon: isEmailStarred
-                      ? imagePaths.icStar
-                      : imagePaths.icUnStar,
-                  iconSize: 20,
-                  padding: EdgeInsets.zero,
-                  backgroundColor: Colors.transparent,
-                  tooltipMessage: isEmailStarred
-                      ? AppLocalizations.of(context).not_starred
-                      : AppLocalizations.of(context).mark_as_starred,
-                  onTapActionCallback: () {
-                    widget.emailActionClick?.call(
-                      isEmailStarred
-                          ? EmailActionType.unMarkAsStarred
-                          : EmailActionType.markAsStarred,
-                      widget.presentationEmail,
-                    );
-                  },
-                ),
+                if (widget.selectAllMode == SelectMode.ACTIVE)
+                  ValueListenableBuilder(
+                    valueListenable: _hoverNotifier,
+                    builder: (_, isHovered, __) {
+                      return TMailButtonWidget.fromIcon(
+                        icon: isEmailSelected
+                            ? imagePaths.icCheckboxSelected
+                            : imagePaths.icCheckboxUnselected,
+                        iconColor: isHovered || isEmailSelected
+                            ? AppColor.primaryColor
+                            : AppColor.colorEmailTileCheckboxUnhover,
+                        iconSize: 20,
+                        padding: const EdgeInsets.all(10),
+                        margin: const EdgeInsetsDirectional.only(start: 4),
+                        backgroundColor: Colors.transparent,
+                        tooltipMessage: isEmailSelected
+                            ? AppLocalizations.of(context).selected
+                            : AppLocalizations.of(context).notSelected,
+                        onTapActionCallback: () {
+                          widget.emailActionClick?.call(
+                              EmailActionType.selection,
+                              widget.presentationEmail
+                          );
+                        },
+                      );
+                    },
+                  ),
                 buildIconWeb(
                   icon: buildIconAnsweredOrForwarded(presentationEmail: widget.presentationEmail),
                   tooltip: messageToolTipForAnsweredOrForwarded(context, widget.presentationEmail),

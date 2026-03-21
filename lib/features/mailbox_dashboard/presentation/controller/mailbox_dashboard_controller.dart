@@ -298,6 +298,7 @@ class MailboxDashBoardController extends ReloadableController
   final emailUIAction = Rxn<EmailUIAction>();
   final threadDetailUIAction = Rxn<ThreadDetailUIAction>();
   final dashboardRoute = DashboardRoutes.waiting.obs;
+  final splitViewEnabled = false.obs;
   final currentSelectMode = SelectMode.INACTIVE.obs;
   final filterMessageOption = FilterMessageOption.all.obs;
   final listEmailSelected = <PresentationEmail>[].obs;
