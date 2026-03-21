@@ -63,11 +63,15 @@ class TMailAutoCompleteBindings extends InteractorsBindings {
   void bindingsRepositoryImpl() {
     final dataSources = <AutoCompleteDataSource>{};
 
-    if (Get.isRegistered<TMailContactDataSourceImpl>()) {
+    final hasCardDav = Get.isRegistered<CardDavContactDataSourceImpl>();
+
+    // Only use TMailContact if CardDAV is NOT available (James-only feature)
+    // When CardDAV is available, TMailContact generates useless 400 errors on Stalwart
+    if (!hasCardDav && Get.isRegistered<TMailContactDataSourceImpl>()) {
       dataSources.add(Get.find<TMailContactDataSourceImpl>());
-      print('TMailAutoCompleteBindings::bindingsRepositoryImpl: added TMailContactDataSourceImpl');
+      print('TMailAutoCompleteBindings::bindingsRepositoryImpl: added TMailContactDataSourceImpl (no CardDAV)');
     }
-    if (Get.isRegistered<CardDavContactDataSourceImpl>()) {
+    if (hasCardDav) {
       dataSources.add(Get.find<CardDavContactDataSourceImpl>());
       print('TMailAutoCompleteBindings::bindingsRepositoryImpl: added CardDavContactDataSourceImpl');
     }
