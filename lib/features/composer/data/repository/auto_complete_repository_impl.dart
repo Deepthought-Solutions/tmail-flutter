@@ -13,11 +13,11 @@ class AutoCompleteRepositoryImpl extends AutoCompleteRepository {
 
   @override
   Future<List<EmailAddress>> getAutoComplete(AutoCompletePattern autoCompletePattern) async {
-    log('AutoCompleteRepositoryImpl::getAutoComplete: query="${autoCompletePattern.word}" '
+    print('AutoCompleteRepositoryImpl::getAutoComplete: query="${autoCompletePattern.word}" '
         'datasources=${autoCompleteDataSources.length} '
         'types=${autoCompleteDataSources.map((d) => d.runtimeType).toList()}');
     if (autoCompleteDataSources.isEmpty) {
-      log('AutoCompleteRepositoryImpl::getAutoComplete: NO datasources available');
+      print('AutoCompleteRepositoryImpl::getAutoComplete: NO datasources available');
       return [];
     }
     // Query all data sources in parallel, catch individual errors
@@ -25,7 +25,7 @@ class AutoCompleteRepositoryImpl extends AutoCompleteRepository {
     final results = await Future.wait(
       autoCompleteDataSources.map((datasource) =>
         datasource.getAutoComplete(autoCompletePattern).catchError((error) {
-          log('AutoCompleteRepositoryImpl::getAutoComplete: '
+          print('AutoCompleteRepositoryImpl::getAutoComplete: '
               '${datasource.runtimeType} failed: $error');
           return <EmailAddress>[];
         })

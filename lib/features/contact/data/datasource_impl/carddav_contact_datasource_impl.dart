@@ -15,18 +15,18 @@ class CardDavContactDataSourceImpl extends AutoCompleteDataSource {
 
   @override
   Future<List<EmailAddress>> getAutoComplete(AutoCompletePattern autoCompletePattern) async {
-    log('CardDavContactDataSourceImpl::getAutoComplete: query="${autoCompletePattern.word}"');
+    print('CardDavContactDataSourceImpl::getAutoComplete: query="${autoCompletePattern.word}"');
     try {
       final dynamicUrlInterceptors = Get.find<DynamicUrlInterceptors>();
       final baseUrl = dynamicUrlInterceptors.jmapUrl;
-      log('CardDavContactDataSourceImpl::getAutoComplete: jmapUrl=$baseUrl');
+      print('CardDavContactDataSourceImpl::getAutoComplete: jmapUrl=$baseUrl');
 
       final dashboardController = Get.find<MailboxDashBoardController>();
       final username = dashboardController.sessionCurrent?.username.value;
-      log('CardDavContactDataSourceImpl::getAutoComplete: username=$username');
+      print('CardDavContactDataSourceImpl::getAutoComplete: username=$username');
 
       if (baseUrl == null || username == null) {
-        log('CardDavContactDataSourceImpl::getAutoComplete: baseUrl or username is null, returning empty');
+        print('CardDavContactDataSourceImpl::getAutoComplete: baseUrl or username is null, returning empty');
         return [];
       }
 
@@ -36,7 +36,7 @@ class CardDavContactDataSourceImpl extends AutoCompleteDataSource {
       // Stalwart uses short username in DAV paths
       final davUsername = username.contains('@') ? username.split('@')[0] : username;
 
-      log('CardDavContactDataSourceImpl::getAutoComplete: searching CardDAV at $serverBase/dav/card/$davUsername/default/');
+      print('CardDavContactDataSourceImpl::getAutoComplete: searching CardDAV at $serverBase/dav/card/$davUsername/default/');
 
       final results = await _cardDavApi.searchContacts(
         baseUrl: serverBase,
@@ -45,12 +45,12 @@ class CardDavContactDataSourceImpl extends AutoCompleteDataSource {
         limit: autoCompletePattern.limit ?? 10,
       );
 
-      log('CardDavContactDataSourceImpl::getAutoComplete: found ${results.length} CardDAV contacts');
+      print('CardDavContactDataSourceImpl::getAutoComplete: found ${results.length} CardDAV contacts');
 
       return results;
     } catch (e, stackTrace) {
-      log('CardDavContactDataSourceImpl::getAutoComplete: ERROR $e');
-      log('CardDavContactDataSourceImpl::getAutoComplete: stackTrace=$stackTrace');
+      print('CardDavContactDataSourceImpl::getAutoComplete: ERROR $e');
+      print('CardDavContactDataSourceImpl::getAutoComplete: stackTrace=$stackTrace');
       return [];
     }
   }

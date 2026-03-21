@@ -33,7 +33,7 @@ class CardDavApi {
 
     final url = '$baseUrl/dav/card/$username/default/$uid.vcf';
 
-    log('CardDavApi::saveContact: PUT $url for $email');
+    print('CardDavApi::saveContact: PUT $url for $email');
 
     await _dio.request(
       url,
@@ -81,7 +81,7 @@ class CardDavApi {
   </C:filter>
 </C:addressbook-query>''';
 
-    log('CardDavApi::searchContacts: REPORT $url for query="$query"');
+    print('CardDavApi::searchContacts: REPORT $url for query="$query"');
 
     try {
       final response = await _dio.request(
@@ -100,13 +100,13 @@ class CardDavApi {
       );
 
       if (response.statusCode == 404) {
-        log('CardDavApi::searchContacts: addressbook not found');
+        print('CardDavApi::searchContacts: addressbook not found');
         return [];
       }
 
       return _parseMultiStatusResponse(response.data as String, limit);
     } catch (e) {
-      log('CardDavApi::searchContacts: error $e');
+      print('CardDavApi::searchContacts: error $e');
       return [];
     }
   }
@@ -136,7 +136,7 @@ class CardDavApi {
         }
       }
     } catch (e) {
-      log('CardDavApi::_parseMultiStatusResponse: parse error $e');
+      print('CardDavApi::_parseMultiStatusResponse: parse error $e');
     }
 
     return results;
