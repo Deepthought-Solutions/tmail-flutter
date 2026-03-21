@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:jmap_dart_client/jmap/account_id.dart';
-import 'package:jmap_dart_client/jmap/core/capability/capability_identifier.dart';
 import 'package:jmap_dart_client/jmap/core/id.dart';
 import 'package:jmap_dart_client/jmap/core/session/session.dart';
 import 'package:jmap_dart_client/jmap/identities/identity.dart';
@@ -105,7 +104,6 @@ import 'package:tmail_ui_user/features/thread_detail/presentation/extension/mark
 import 'package:tmail_ui_user/features/thread_detail/presentation/extension/on_thread_page_changed.dart';
 import 'package:tmail_ui_user/features/thread_detail/presentation/extension/update_cached_list_email_loaded.dart';
 import 'package:tmail_ui_user/features/thread_detail/presentation/thread_detail_controller.dart';
-import 'package:tmail_ui_user/main/error/capability_validator.dart';
 import 'package:tmail_ui_user/main/localizations/app_localizations.dart';
 import 'package:tmail_ui_user/main/localizations/localization_service.dart';
 import 'package:tmail_ui_user/main/routes/app_routes.dart';

@@ -16,7 +16,6 @@ import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/event_time_information_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/event_title_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/email_sender_builder.dart';
-import 'package:tmail_ui_user/main/localizations/app_localizations.dart';
 import 'package:tmail_ui_user/main/utils/app_utils.dart';
 
 typedef OnOpenNewTabAction = void Function(String link);

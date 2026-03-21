@@ -7,7 +7,6 @@ import 'package:get/get_utils/src/get_utils/get_utils.dart';
 import 'package:dartz/dartz.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:jmap_dart_client/jmap/account_id.dart';
-import 'package:jmap_dart_client/jmap/core/capability/capability_identifier.dart';
 import 'package:jmap_dart_client/jmap/core/id.dart';
 import 'package:jmap_dart_client/jmap/core/properties/properties.dart';
 import 'package:jmap_dart_client/jmap/core/session/session.dart';
@@ -19,7 +18,6 @@ import 'package:tmail_ui_user/features/download/domain/state/download_and_get_ht
 import 'package:tmail_ui_user/features/email/presentation/model/email_unsubscribe.dart';
 import 'package:tmail_ui_user/features/email/domain/utils/calendar_event_capability_helper.dart';
 import 'package:tmail_ui_user/features/thread/domain/constants/thread_constants.dart';
-import 'package:tmail_ui_user/main/error/capability_validator.dart';
 import 'package:tmail_ui_user/main/routes/route_utils.dart';
 import 'package:tmail_ui_user/main/utils/app_utils.dart';
 

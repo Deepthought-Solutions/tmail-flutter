@@ -370,20 +370,17 @@ class EmailView extends GetWidget<SingleEmailController> {
                     .responsiveUtils
                     .isPortraitMobile(context),
               )),
-              Obx(() => CalendarEventConflictWidget(
-                conflicts: controller.conflictingEvents,
-              )),
               Obx(() {
-                final calendarUrl = AppConfig.calendarUrl;
-                final isAccepted = controller.attendanceStatus.value == AttendanceStatus.accepted;
-                if (calendarUrl != null && isAccepted) {
-                  return CalendarViewLinkWidget(
-                    calendarUrl: calendarUrl,
-                    eventDate: calendarEvent.localStartDate,
-                  );
-                }
-                return const SizedBox.shrink();
+                final conflicts = controller.conflictingEvents.toList();
+                return CalendarEventConflictWidget(
+                  conflicts: conflicts,
+                );
               }),
+              if (AppConfig.calendarUrl != null)
+                CalendarViewLinkWidget(
+                  calendarUrl: AppConfig.calendarUrl!,
+                  eventDate: calendarEvent.localStartDate,
+                ),
               if (_validateDisplayEventActionBanner(
                   context: context,
                   event: calendarEvent,
