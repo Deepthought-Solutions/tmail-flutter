@@ -5793,6 +5793,13 @@ class AppLocalizations {
     );
   }
 
+  String get createMeeting {
+    return Intl.message(
+      'Planifier un rendez-vous',
+      name: 'createMeeting',
+    );
+  }
+
   String get conflictDetectionFailed {
     return Intl.message(
       'Could not check for calendar conflicts',

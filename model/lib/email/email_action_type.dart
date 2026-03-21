@@ -31,7 +31,8 @@ enum EmailActionType {
   composeFromUnsubscribeMailtoLink(),
   archiveMessage(3),
   printAll(4),
-  downloadMessageAsEML(4);
+  downloadMessageAsEML(4),
+  createMeeting(4);
 
   /// Add category to group email action
   final int category;

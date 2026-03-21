@@ -180,6 +180,8 @@ extension EmailActionTypeExtension on EmailActionType {
         return imagePaths.icEdit;
       case EmailActionType.openInNewTab:
         return imagePaths.icOpenInNewTab;
+      case EmailActionType.createMeeting:
+        return imagePaths.icCalendar;
       case EmailActionType.printAll:
         return imagePaths.icPrinter;
       case EmailActionType.reply:
@@ -228,6 +230,8 @@ extension EmailActionTypeExtension on EmailActionType {
         return appLocalizations.editAsNewEmail;
       case EmailActionType.openInNewTab:
         return appLocalizations.openInNewTab;
+      case EmailActionType.createMeeting:
+        return appLocalizations.createMeeting;
       case EmailActionType.printAll:
         return appLocalizations.print;
       case EmailActionType.reply:

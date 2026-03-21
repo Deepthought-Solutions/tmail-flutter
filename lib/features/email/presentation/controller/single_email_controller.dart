@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:core/core.dart';
+import 'package:tmail_ui_user/main/utils/app_config.dart';
 import 'package:core/presentation/utils/html_transformer/text/new_line_transformer.dart';
 import 'package:core/presentation/utils/html_transformer/text/sanitize_autolink_unescape_html_transformer.dart';
 import 'package:dartz/dartz.dart';
@@ -914,6 +915,9 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
           showBottomDownloadProgressBar: true,
         );
         break;
+      case EmailActionType.createMeeting:
+        _openCreateMeeting(presentationEmail);
+        break;
       case EmailActionType.editAsNewEmail:
         _editAsNewEmail(presentationEmail);
         break;
@@ -1371,6 +1375,36 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
       ownEmailAddress: accountDisplayName,
       emailLoaded: currentEmailLoaded.value!,
     ));
+  }
+
+  void _openCreateMeeting(PresentationEmail email) {
+    final calendarUrl = AppConfig.calendarUrl;
+    if (calendarUrl == null) return;
+
+    // Collect all email addresses from the conversation
+    final recipients = <String>{};
+    for (final addr in [...?email.to, ...?email.cc]) {
+      final emailStr = addr.email;
+      if (emailStr != null && emailStr.isNotEmpty) {
+        recipients.add(emailStr);
+      }
+    }
+    // Also add the sender
+    final sender = email.from?.firstOrNull?.email;
+    if (sender != null && sender.isNotEmpty) {
+      recipients.add(sender);
+    }
+
+    final subject = email.subject ?? '';
+    final title = Uri.encodeComponent('Re: $subject');
+    final attendees = Uri.encodeComponent(recipients.join(','));
+    final today = DateTime.now();
+    final date = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    final separator = calendarUrl.contains('?') ? '&' : '?';
+    final url = '$calendarUrl${separator}new=1&title=$title&attendees=$attendees&date=$date';
+
+    AppUtils.launchLink(url);
   }
 
   void _showMessageWhenStartingEmailPrinting() {

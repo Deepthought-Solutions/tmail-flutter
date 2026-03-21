@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:core/domain/extensions/datetime_extension.dart';
 import 'package:core/presentation/extensions/color_extension.dart';
+import 'package:tmail_ui_user/main/utils/app_config.dart';
 import 'package:core/presentation/resources/image_paths.dart';
 import 'package:core/presentation/state/failure.dart';
 import 'package:core/presentation/state/success.dart';
@@ -542,6 +543,8 @@ class EmailActionReactor {
         EmailActionType.archiveMessage,
       if (PlatformInfo.isWeb && PlatformInfo.isCanvasKit)
         EmailActionType.downloadMessageAsEML,
+      if (AppConfig.calendarUrl != null)
+        EmailActionType.createMeeting,
       EmailActionType.editAsNewEmail,
     ];
 
