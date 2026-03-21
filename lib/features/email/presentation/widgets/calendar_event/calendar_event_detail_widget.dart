@@ -36,11 +36,6 @@ class CalendarEventDetailWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eventDesc = _generateEventDescriptionAsHtml();
-    final hasTitle = calendarEvent.title?.isNotEmpty == true;
-
-    if (!hasTitle && eventDesc.isEmpty) {
-      return const SizedBox.shrink();
-    }
 
     return Container(
       clipBehavior: Clip.antiAlias,
