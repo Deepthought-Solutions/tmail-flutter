@@ -31,11 +31,12 @@ class CardDavApi {
         'UID:urn:uuid:$uid\r\n'
         'END:VCARD';
 
-    final url = '$baseUrl/dav/card/$username/default/$uid.vcf';
+    final collectionUrl = '$baseUrl/dav/card/$username/collected/';
+    final url = '${collectionUrl}$uid.vcf';
 
     print('CardDavApi::saveContact: PUT $url for $email');
 
-    await _dio.request(
+    final response = await _dio.request(
       url,
       data: vcard,
       options: Options(
@@ -45,9 +46,53 @@ class CardDavApi {
           'If-None-Match': '*',
         },
         validateStatus: (status) =>
-            status == 201 || status == 204 || status == 412,
+            status == 201 || status == 204 || status == 404 || status == 412,
       ),
     );
+
+    // If collected addressbook doesn't exist, create it and retry
+    if (response.statusCode == 404) {
+      print('CardDavApi::saveContact: collected addressbook not found, creating via MKCOL');
+      await _createCollectedAddressbook(collectionUrl);
+      await _dio.request(
+        url,
+        data: vcard,
+        options: Options(
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'text/vcard; charset=utf-8',
+            'If-None-Match': '*',
+          },
+          validateStatus: (status) =>
+              status == 201 || status == 204 || status == 412,
+        ),
+      );
+    }
+  }
+
+  /// Creates the "collected" addressbook via MKCOL.
+  Future<void> _createCollectedAddressbook(String collectionUrl) async {
+    final mkcolBody = '<?xml version="1.0" encoding="UTF-8"?>'
+        '<D:mkcol xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:carddav">'
+        '<D:set><D:prop>'
+        '<D:resourcetype><D:collection/><C:addressbook/></D:resourcetype>'
+        '<D:displayname>Collected Contacts</D:displayname>'
+        '</D:prop></D:set></D:mkcol>';
+
+    try {
+      await _dio.request(
+        collectionUrl,
+        data: mkcolBody,
+        options: Options(
+          method: 'MKCOL',
+          headers: {'Content-Type': 'application/xml; charset=utf-8'},
+          validateStatus: (status) => status == 201 || status == 405 || status == 409,
+        ),
+      );
+      print('CardDavApi::_createCollectedAddressbook: created successfully');
+    } catch (e) {
+      print('CardDavApi::_createCollectedAddressbook: failed $e');
+    }
   }
 
   /// Searches contacts via CardDAV REPORT with addressbook-query filter.
@@ -59,10 +104,11 @@ class CardDavApi {
     required String username,
     required String query,
     int limit = 10,
+    String addressbook = 'default',
   }) async {
     if (query.trim().isEmpty) return [];
 
-    final url = '$baseUrl/dav/card/$username/default/';
+    final url = '$baseUrl/dav/card/$username/$addressbook/';
 
     // CardDAV addressbook-query REPORT with text-match filter
     final requestBody = '''<?xml version="1.0" encoding="UTF-8"?>

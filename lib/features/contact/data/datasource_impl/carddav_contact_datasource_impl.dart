@@ -36,16 +36,35 @@ class CardDavContactDataSourceImpl extends AutoCompleteDataSource {
       // Stalwart uses short username in DAV paths
       final davUsername = username.contains('@') ? username.split('@')[0] : username;
 
-      print('CardDavContactDataSourceImpl::getAutoComplete: searching CardDAV at $serverBase/dav/card/$davUsername/default/');
+      print('CardDavContactDataSourceImpl::getAutoComplete: searching CardDAV for "$davUsername"');
 
-      final results = await _cardDavApi.searchContacts(
+      // Search in both default and collected addressbooks
+      final defaultResults = await _cardDavApi.searchContacts(
         baseUrl: serverBase,
         username: davUsername,
         query: autoCompletePattern.word,
         limit: autoCompletePattern.limit ?? 10,
+        addressbook: 'default',
       );
+      final collectedResults = await _cardDavApi.searchContacts(
+        baseUrl: serverBase,
+        username: davUsername,
+        query: autoCompletePattern.word,
+        limit: autoCompletePattern.limit ?? 10,
+        addressbook: 'collected',
+      ).catchError((_) => <EmailAddress>[]);
 
-      print('CardDavContactDataSourceImpl::getAutoComplete: found ${results.length} CardDAV contacts');
+      // Merge and deduplicate
+      final seen = <String>{};
+      final results = <EmailAddress>[];
+      for (final addr in [...defaultResults, ...collectedResults]) {
+        final key = addr.email?.toLowerCase() ?? '';
+        if (key.isNotEmpty && seen.add(key)) {
+          results.add(addr);
+        }
+      }
+
+      print('CardDavContactDataSourceImpl::getAutoComplete: found ${results.length} contacts (${defaultResults.length} default + ${collectedResults.length} collected)');
 
       return results;
     } catch (e, stackTrace) {
