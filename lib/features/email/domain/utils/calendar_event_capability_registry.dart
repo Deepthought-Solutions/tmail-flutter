@@ -2,6 +2,7 @@ import 'package:jmap_dart_client/jmap/account_id.dart';
 import 'package:jmap_dart_client/jmap/core/capability/capability_identifier.dart';
 import 'package:jmap_dart_client/jmap/core/id.dart';
 import 'package:jmap_dart_client/jmap/core/session/session.dart';
+import 'package:jmap_dart_client/jmap/mail/calendar/attendance/calendar_event_attendance.dart';
 import 'package:jmap_dart_client/jmap/mail/calendar/calendar_event.dart';
 import 'package:jmap_dart_client/jmap/mail/mailbox/mailbox.dart';
 import 'package:tmail_ui_user/features/email/domain/utils/calendar_event_capability_helper.dart';
@@ -18,6 +19,8 @@ class CalendarEventCapabilityRegistry {
   String? _userEmail;
   MailboxId? _sentMailboxId;
   final Map<Id, CalendarEvent> _parsedEvents = {};
+  /// Persists attendance status by event UID so it survives email reopen.
+  final Map<String, AttendanceStatus> _attendanceByEventUid = {};
 
   void configure(Session session, AccountId accountId) {
     _isJames = CalendarEventCapabilityHelper.isJamesSupported(session, accountId);
@@ -40,6 +43,14 @@ class CalendarEventCapabilityRegistry {
 
   void cacheEvent(Id blobId, CalendarEvent event) => _parsedEvents[blobId] = event;
   CalendarEvent? getEvent(Id blobId) => _parsedEvents[blobId];
+
+  /// Store the user's RSVP response for a given event UID so it persists across email reopens.
+  void setAttendanceStatus(String eventUid, AttendanceStatus status) =>
+      _attendanceByEventUid[eventUid] = status;
+
+  /// Retrieve the persisted attendance status for a given event UID.
+  AttendanceStatus? getAttendanceStatus(String eventUid) =>
+      _attendanceByEventUid[eventUid];
 
   bool get isJames => _isJames;
   bool get isIetf => _isIetf && !_isJames;

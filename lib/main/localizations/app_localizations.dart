@@ -5788,7 +5788,7 @@ class AppLocalizations {
 
   String get viewInCalendar {
     return Intl.message(
-      'View in calendar',
+      'Voir dans le calendrier',
       name: 'viewInCalendar',
     );
   }

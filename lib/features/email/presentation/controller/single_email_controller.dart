@@ -1435,73 +1435,84 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
     || !session!.validateAcceptCounterCalendarEventCapability(accountId!);
 
   void _acceptCalendarEventAction(EmailId emailId) {
-    final hasInteractor = _acceptCalendarEventInteractor != null;
-    final hasBlobId = _displayingEventBlobId != null;
-    final hasAccount = accountId != null;
-    final hasSession = session != null;
-    final capAvailable = hasSession && hasAccount ? session!.validateCalendarEventCapability(accountId!).isAvailable : false;
-    log('[TRAKTION-RSVP] accept: interactor=$hasInteractor blobId=$hasBlobId account=$hasAccount session=$hasSession capAvailable=$capAvailable');
-    if (!hasInteractor || !hasBlobId || !hasAccount || !hasSession || !capAvailable) {
-      log('[TRAKTION-RSVP] accept BLOCKED - falling into failure');
+    // Allow iMIP fallback: if the interactor exists (parse capability was detected
+    // and bindings injected), proceed even without JMAP CalendarEvent reply capability.
+    // The datasource layer handles the iMIP fallback internally.
+    if (_acceptCalendarEventInteractor == null
+      || _displayingEventBlobId == null
+      || accountId == null
+      || session == null
+    ) {
+      log('[TRAKTION-RSVP] accept BLOCKED - missing prerequisites');
       consumeState(Stream.value(Left(CalendarEventAcceptFailure())));
     } else {
-      log('[TRAKTION-RSVP] accept PROCEEDING with blobId=${_displayingEventBlobId!.value}');
+      final capAvailable = session!.validateCalendarEventCapability(accountId!).isAvailable;
+      log('[TRAKTION-RSVP] accept PROCEEDING with blobId=${_displayingEventBlobId!.value} capAvailable=$capAvailable');
       consumeState(_acceptCalendarEventInteractor!.execute(
         accountId!,
         {_displayingEventBlobId!},
         emailId,
-        session!.getLanguageForCalendarEvent(
+        capAvailable ? session!.getLanguageForCalendarEvent(
           LocalizationService.getInitialLocale(),
           accountId!,
-        ),
+        ) : null,
       ));
     }
   }
 
   void _rejectCalendarEventAction(EmailId emailId) {
+    // Allow iMIP fallback: if interactor exists, proceed even without JMAP reply capability
     if (_rejectCalendarEventInteractor == null
       || _displayingEventBlobId == null
       || accountId == null
       || session == null
-      || session!.validateCalendarEventCapability(accountId!).isAvailable == false
     ) {
       consumeState(Stream.value(Left(CalendarEventRejectFailure())));
     } else {
+      final capAvailable = session!.validateCalendarEventCapability(accountId!).isAvailable;
       consumeState(_rejectCalendarEventInteractor!.execute(
         accountId!,
         {_displayingEventBlobId!},
         emailId,
-        session!.getLanguageForCalendarEvent(
+        capAvailable ? session!.getLanguageForCalendarEvent(
           LocalizationService.getInitialLocale(),
           accountId!,
-        ),
+        ) : null,
       ));
     }
   }
 
   void _maybeCalendarEventAction(EmailId emailId) {
+    // Allow iMIP fallback: if interactor exists, proceed even without JMAP reply capability
     if (_maybeCalendarEventInteractor == null
       || _displayingEventBlobId == null
       || accountId == null
       || session == null
-      || session!.validateCalendarEventCapability(accountId!).isAvailable == false
     ) {
       consumeState(Stream.value(Left(CalendarEventMaybeFailure())));
     } else {
+      final capAvailable = session!.validateCalendarEventCapability(accountId!).isAvailable;
       consumeState(_maybeCalendarEventInteractor!.execute(
         accountId!,
         {_displayingEventBlobId!},
         emailId,
-        session!.getLanguageForCalendarEvent(
+        capAvailable ? session!.getLanguageForCalendarEvent(
           LocalizationService.getInitialLocale(),
           accountId!,
-        ),
+        ) : null,
       ));
     }
   }
 
   void calendarEventSuccess(CalendarEventReplySuccess success) {
     updateAttendanceStatus(success);
+
+    // Persist attendance status by event UID so it survives email reopen
+    final eventUid = calendarEvent?.eventId?.id;
+    if (eventUid != null && attendanceStatus.value != null) {
+      CalendarEventCapabilityRegistry.instance
+          .setAttendanceStatus(eventUid, attendanceStatus.value!);
+    }
 
     if (currentOverlayContext == null || currentContext == null) {
       return;

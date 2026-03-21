@@ -983,6 +983,10 @@ class ComposerController extends BaseController
       // Strip trailing /jmap (or similar path) to get the server root
       final serverBase = baseUrl.replaceAll(RegExp(r'/jmap$'), '');
 
+      // Extract short username from JMAP username (e.g. "franck" from "franck.taino@traktion-das.com")
+      // Stalwart uses the short name in DAV paths (/dav/card/franck/default/)
+      final davUsername = username.contains('@') ? username.split('@')[0] : username;
+
       final allRecipients = <EmailAddress>{
         ...listToEmailAddress,
         ...listCcEmailAddress,
@@ -1003,7 +1007,7 @@ class ComposerController extends BaseController
 
         cardDavApi.saveContact(
           baseUrl: serverBase,
-          username: username,
+          username: davUsername,
           displayName: displayName,
           email: email,
         ).catchError((error) {

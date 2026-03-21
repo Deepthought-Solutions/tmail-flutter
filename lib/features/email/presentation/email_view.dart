@@ -7,7 +7,6 @@ import 'package:core/presentation/views/tooltip/iframe_tooltip_overlay.dart';
 import 'package:core/utils/platform_info.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:jmap_dart_client/jmap/mail/calendar/attendance/calendar_event_attendance.dart';
 import 'package:jmap_dart_client/jmap/mail/calendar/calendar_event.dart';
 import 'package:jmap_dart_client/jmap/mail/email/email.dart';
 import 'package:labels/model/label.dart';
@@ -33,7 +32,6 @@ import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_event_conflict_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_event_detail_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_event_information_widget.dart';
-import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_view_link_widget.dart';
 import 'package:tmail_ui_user/main/utils/app_config.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/email_attachments_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/email_subject_widget.dart';
@@ -369,6 +367,8 @@ class EmailView extends GetWidget<SingleEmailController> {
                 isPortraitMobile: controller
                     .responsiveUtils
                     .isPortraitMobile(context),
+                calendarUrl: AppConfig.calendarUrl,
+                eventDate: calendarEvent.localStartDate,
               )),
               Obx(() {
                 final conflicts = controller.conflictingEvents.toList();
@@ -376,11 +376,6 @@ class EmailView extends GetWidget<SingleEmailController> {
                   conflicts: conflicts,
                 );
               }),
-              if (AppConfig.calendarUrl != null)
-                CalendarViewLinkWidget(
-                  calendarUrl: AppConfig.calendarUrl!,
-                  eventDate: calendarEvent.localStartDate,
-                ),
               if (_validateDisplayEventActionBanner(
                   context: context,
                   event: calendarEvent,

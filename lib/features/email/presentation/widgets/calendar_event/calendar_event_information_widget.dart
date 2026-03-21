@@ -16,6 +16,7 @@ import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/event_time_information_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/event_title_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/email_sender_builder.dart';
+import 'package:tmail_ui_user/main/localizations/app_localizations.dart';
 import 'package:tmail_ui_user/main/utils/app_utils.dart';
 
 typedef OnOpenNewTabAction = void Function(String link);
@@ -36,6 +37,8 @@ class CalendarEventInformationWidget extends StatelessWidget {
   final List<String> listEmailAddressSender;
   final String ownEmailAddress;
   final bool isPortraitMobile;
+  final String? calendarUrl;
+  final DateTime? eventDate;
 
   const CalendarEventInformationWidget({
     super.key,
@@ -52,6 +55,8 @@ class CalendarEventInformationWidget extends StatelessWidget {
     this.openEmailAddressDetailAction,
     this.listEmailAddressSender = const [],
     this.isPortraitMobile = false,
+    this.calendarUrl,
+    this.eventDate,
   });
 
   @override
@@ -168,6 +173,8 @@ class CalendarEventInformationWidget extends StatelessWidget {
                 calendarEvent.participants,
               ),
             ),
+          if (calendarUrl != null)
+            _buildViewInCalendarButton(context),
         ],
       ),
     );
@@ -227,5 +234,39 @@ class CalendarEventInformationWidget extends StatelessWidget {
     } else {
       return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildViewInCalendarButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: OutlinedButton.icon(
+        onPressed: _openCalendar,
+        icon: const Icon(Icons.calendar_today, size: 16),
+        label: Text(AppLocalizations.of(context).viewInCalendar),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColor.primaryColor,
+          side: const BorderSide(color: AppColor.primaryColor, width: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          textStyle: ThemeUtils.defaultTextStyleInterFont.copyWith(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openCalendar() {
+    String url = calendarUrl!;
+    if (eventDate != null) {
+      final dateStr =
+          '${eventDate!.year}-${eventDate!.month.toString().padLeft(2, '0')}-${eventDate!.day.toString().padLeft(2, '0')}';
+      final separator = url.contains('?') ? '&' : '?';
+      url = '$url${separator}date=$dateStr&view=timeGridDay';
+    }
+    AppUtils.launchLink(url);
   }
 }
