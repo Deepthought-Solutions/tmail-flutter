@@ -18,30 +18,30 @@ class TMailAutoCompleteBindings extends InteractorsBindings {
 
   @override
   void bindingsDataSourceImpl() {
-    print('TMailAutoCompleteBindings::bindingsDataSourceImpl: START');
+    log('TMailAutoCompleteBindings::bindingsDataSourceImpl: START');
     try {
       Get.put(TMailContactDataSourceImpl(
         Get.find<ContactAPI>(),
         Get.find<RemoteExceptionThrower>(),
       ));
-      print('TMailAutoCompleteBindings: TMailContactDataSourceImpl registered');
+      log('TMailAutoCompleteBindings: TMailContactDataSourceImpl registered');
     } catch (e) {
-      print('TMailAutoCompleteBindings: TMailContactDataSourceImpl FAILED: $e');
+      log('TMailAutoCompleteBindings: TMailContactDataSourceImpl FAILED: $e');
     }
 
     final isCardDavRegistered = Get.isRegistered<CardDavApi>();
-    print('TMailAutoCompleteBindings: CardDavApi isRegistered=$isCardDavRegistered');
+    log('TMailAutoCompleteBindings: CardDavApi isRegistered=$isCardDavRegistered');
     if (isCardDavRegistered) {
       try {
         Get.put(CardDavContactDataSourceImpl(
           Get.find<CardDavApi>(),
         ));
-        print('TMailAutoCompleteBindings: CardDavContactDataSourceImpl registered');
+        log('TMailAutoCompleteBindings: CardDavContactDataSourceImpl registered');
       } catch (e) {
-        print('TMailAutoCompleteBindings: CardDavContactDataSourceImpl FAILED: $e');
+        log('TMailAutoCompleteBindings: CardDavContactDataSourceImpl FAILED: $e');
       }
     } else {
-      print('TMailAutoCompleteBindings: CardDavApi NOT registered, skipping CardDAV autocomplete');
+      log('TMailAutoCompleteBindings: CardDavApi NOT registered, skipping CardDAV autocomplete');
     }
   }
 
@@ -69,14 +69,14 @@ class TMailAutoCompleteBindings extends InteractorsBindings {
     // When CardDAV is available, TMailContact generates useless 400 errors on Stalwart
     if (!hasCardDav && Get.isRegistered<TMailContactDataSourceImpl>()) {
       dataSources.add(Get.find<TMailContactDataSourceImpl>());
-      print('TMailAutoCompleteBindings::bindingsRepositoryImpl: added TMailContactDataSourceImpl (no CardDAV)');
+      log('TMailAutoCompleteBindings::bindingsRepositoryImpl: added TMailContactDataSourceImpl (no CardDAV)');
     }
     if (hasCardDav) {
       dataSources.add(Get.find<CardDavContactDataSourceImpl>());
-      print('TMailAutoCompleteBindings::bindingsRepositoryImpl: added CardDavContactDataSourceImpl');
+      log('TMailAutoCompleteBindings::bindingsRepositoryImpl: added CardDavContactDataSourceImpl');
     }
 
-    print('TMailAutoCompleteBindings::bindingsRepositoryImpl: ${dataSources.length} datasource(s)');
+    log('TMailAutoCompleteBindings::bindingsRepositoryImpl: ${dataSources.length} datasource(s)');
     Get.put(AutoCompleteRepositoryImpl(dataSources));
   }
 

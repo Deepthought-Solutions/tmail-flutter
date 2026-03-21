@@ -34,7 +34,7 @@ class CardDavApi {
     final collectionUrl = '$baseUrl/dav/card/$username/collected/';
     final url = '${collectionUrl}$uid.vcf';
 
-    print('CardDavApi::saveContact: PUT $url for $email');
+    log('CardDavApi::saveContact: PUT $url for $email');
 
     final response = await _dio.request(
       url,
@@ -52,7 +52,7 @@ class CardDavApi {
 
     // If collected addressbook doesn't exist, create it and retry
     if (response.statusCode == 404) {
-      print('CardDavApi::saveContact: collected addressbook not found, creating via MKCOL');
+      log('CardDavApi::saveContact: collected addressbook not found, creating via MKCOL');
       await _createCollectedAddressbook(collectionUrl);
       await _dio.request(
         url,
@@ -89,9 +89,9 @@ class CardDavApi {
           validateStatus: (status) => status == 201 || status == 405 || status == 409,
         ),
       );
-      print('CardDavApi::_createCollectedAddressbook: created successfully');
+      log('CardDavApi::_createCollectedAddressbook: created successfully');
     } catch (e) {
-      print('CardDavApi::_createCollectedAddressbook: failed $e');
+      log('CardDavApi::_createCollectedAddressbook: failed $e');
     }
   }
 
@@ -127,7 +127,7 @@ class CardDavApi {
   </C:filter>
 </C:addressbook-query>''';
 
-    print('CardDavApi::searchContacts: REPORT $url for query="$query"');
+    log('CardDavApi::searchContacts: REPORT $url for query="$query"');
 
     try {
       final response = await _dio.request(
@@ -146,13 +146,13 @@ class CardDavApi {
       );
 
       if (response.statusCode == 404) {
-        print('CardDavApi::searchContacts: addressbook not found');
+        log('CardDavApi::searchContacts: addressbook not found');
         return [];
       }
 
       return _parseMultiStatusResponse(response.data as String, limit);
     } catch (e) {
-      print('CardDavApi::searchContacts: error $e');
+      log('CardDavApi::searchContacts: error $e');
       return [];
     }
   }
@@ -182,7 +182,7 @@ class CardDavApi {
         }
       }
     } catch (e) {
-      print('CardDavApi::_parseMultiStatusResponse: parse error $e');
+      log('CardDavApi::_parseMultiStatusResponse: parse error $e');
     }
 
     return results;

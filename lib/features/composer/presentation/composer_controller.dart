@@ -1067,11 +1067,9 @@ class ComposerController extends BaseController
     );
 
     return Get.dialog(
-      PlatformInfo.isMobile
-        ? PopScope(canPop: false, child: childWidget)
-        : childWidget,
+      childWidget,
       barrierDismissible: false,
-      barrierColor: AppColor.colorDefaultCupertinoActionSheet,
+      barrierColor: Colors.transparent,
     );
   }
 

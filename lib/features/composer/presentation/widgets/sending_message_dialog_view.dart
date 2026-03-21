@@ -1,16 +1,11 @@
 import 'dart:async';
-import 'dart:math';
 
-import 'package:core/presentation/extensions/capitalize_extension.dart';
-import 'package:core/presentation/extensions/color_extension.dart';
 import 'package:core/presentation/state/failure.dart';
 import 'package:core/presentation/state/success.dart';
-import 'package:core/presentation/views/button/tmail_button_widget.dart';
 import 'package:core/utils/app_logger.dart';
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:tmail_ui_user/features/composer/domain/exceptions/compose_email_exception.dart';
 import 'package:tmail_ui_user/features/composer/domain/state/generate_email_state.dart';
 import 'package:tmail_ui_user/features/composer/domain/state/send_email_state.dart';
@@ -44,7 +39,8 @@ class SendingMessageDialogView extends StatefulWidget {
 class _SendingMessageDialogViewState extends State<SendingMessageDialogView> {
 
   StreamSubscription? _streamSubscription;
-  final ValueNotifier<dartz.Either<Failure, Success>?> _viewStateNotifier = ValueNotifier(null);
+  final ValueNotifier<String> _statusText = ValueNotifier('Envoi en cours...');
+  final ValueNotifier<bool> _isError = ValueNotifier(false);
 
   @override
   void initState() {
@@ -61,8 +57,6 @@ class _SendingMessageDialogViewState extends State<SendingMessageDialogView> {
   }
 
   void _handleDataStream(dartz.Either<Failure, Success> newState) {
-    _viewStateNotifier.value = newState;
-
     newState.fold(
       (failure) {
         if (failure is SendEmailFailure || failure is GenerateEmailFailure) {
@@ -72,6 +66,8 @@ class _SendingMessageDialogViewState extends State<SendingMessageDialogView> {
       (success) {
         if (success is SendEmailSuccess) {
           popBack(result: success);
+        } else {
+          _statusText.value = _getStatusMessage(success);
         }
       }
     );
@@ -88,134 +84,49 @@ class _SendingMessageDialogViewState extends State<SendingMessageDialogView> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(12))),
-      insetPadding: const EdgeInsets.symmetric(
-        horizontal: 24.0,
-        vertical: 16.0
-      ),
-      alignment: Alignment.center,
-      child: Container(
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-          color: Colors.white,
-        ),
-        width: min(context.width, 400),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: double.infinity,
-              clipBehavior: Clip.antiAlias,
-              padding: const EdgeInsetsDirectional.symmetric(vertical: 8, horizontal: 12),
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-                color: AppColor.colorItemSelected,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                AppLocalizations.of(context).sendingMessage.capitalizeFirstEach,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 17
-                ),
-              ),
-            ),
-            const Divider(),
-            Column(
+    // Toast-style widget at bottom of screen instead of modal dialog
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.grey.shade800,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 16, end: 16, top: 12, bottom: 4),
-                  child: Row(
-                    children: [
-                      Text(
-                        '${AppLocalizations.of(context).status}:',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ValueListenableBuilder(
-                          valueListenable: _viewStateNotifier,
-                          builder: (context, value, child) {
-                            if (value == null) {
-                              return child!;
-                            }
-
-                            return value.fold(
-                              (failure) => child!,
-                              (success) {
-                                return Text(
-                                  '${_getStatusMessage(success)}...',
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: AppColor.labelColor,
-                                    fontSize: 14
-                                  ),
-                                );
-                              }
-                            );
-                          },
-                          child: Text(
-                            '...',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColor.labelColor,
-                              fontSize: 14
-                            ),
-                          ),
-                        ),
-                      )
-                    ],
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 16, end: 16, top: 4, bottom: 16),
-                  child: Row(
-                    children: [
-                      Text(
-                        '${AppLocalizations.of(context).progress}:',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14
+                const SizedBox(width: 12),
+                Flexible(
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: _statusText,
+                    builder: (context, status, _) {
+                      return Text(
+                        status,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: LinearProgressIndicator(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          backgroundColor: AppColor.primaryColor,
-                          borderRadius: const BorderRadius.all(Radius.circular(12)),
-                        ),
-                      )
-                    ],
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
                   ),
                 ),
-                if (widget.onCancelSendingEmailAction != null)
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: TMailButtonWidget.fromText(
-                      text: AppLocalizations.of(context).cancel,
-                      textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.black87,
-                        fontSize: 15
-                      ),
-                      padding: const EdgeInsetsDirectional.symmetric(horizontal: 20, vertical: 8),
-                      margin: const EdgeInsetsDirectional.only(start: 12, end: 12, bottom: 16),
-                      onTapActionCallback: () {
-                        _viewStateNotifier.value = dartz.Right<Failure, Success>(CancelSendingEmail());
-                        widget.onCancelSendingEmailAction!(cancelToken: widget.cancelToken);
-                      },
-                    ),
-                  )
               ],
-            )
-          ],
+            ),
+          ),
         ),
       ),
     );
@@ -223,18 +134,18 @@ class _SendingMessageDialogViewState extends State<SendingMessageDialogView> {
 
   String _getStatusMessage(Success success) {
     if (success is GenerateEmailLoading) {
-      return AppLocalizations.of(context).creatingMessage;
-    } else if (success is CancelSendingEmail) {
-      return AppLocalizations.of(context).canceling;
-    } else {
+      return AppLocalizations.of(context).sendingMessage;
+    } else if (success is SendEmailLoading) {
       return AppLocalizations.of(context).sendingMessage;
     }
+    return AppLocalizations.of(context).sendingMessage;
   }
 
   @override
   void dispose() {
     _streamSubscription?.cancel();
-    _viewStateNotifier.dispose();
+    _statusText.dispose();
+    _isError.dispose();
     super.dispose();
   }
 }
