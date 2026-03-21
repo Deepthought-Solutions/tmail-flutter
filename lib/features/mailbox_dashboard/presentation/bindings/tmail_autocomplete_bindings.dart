@@ -6,7 +6,9 @@ import 'package:tmail_ui_user/features/composer/domain/repository/auto_complete_
 import 'package:tmail_ui_user/features/composer/domain/usecases/get_autocomplete_interactor.dart';
 import 'package:tmail_ui_user/features/composer/domain/usecases/get_all_autocomplete_interactor.dart';
 import 'package:tmail_ui_user/features/composer/domain/usecases/get_device_contact_suggestions_interactor.dart';
+import 'package:tmail_ui_user/features/contact/data/datasource_impl/carddav_contact_datasource_impl.dart';
 import 'package:tmail_ui_user/features/contact/data/datasource_impl/tmail_contact_datasource_impl.dart';
+import 'package:tmail_ui_user/features/contact/data/network/carddav_api.dart';
 import 'package:tmail_ui_user/features/contact/data/network/contact_api.dart';
 import 'package:tmail_ui_user/main/exceptions/thrower/remote_exception_thrower.dart';
 
@@ -17,6 +19,9 @@ class TMailAutoCompleteBindings extends InteractorsBindings {
     Get.put(TMailContactDataSourceImpl(
       Get.find<ContactAPI>(),
       Get.find<RemoteExceptionThrower>(),
+    ));
+    Get.put(CardDavContactDataSourceImpl(
+      Get.find<CardDavApi>(),
     ));
   }
 
@@ -36,7 +41,10 @@ class TMailAutoCompleteBindings extends InteractorsBindings {
 
   @override
   void bindingsRepositoryImpl() {
-    Get.put(AutoCompleteRepositoryImpl({Get.find<TMailContactDataSourceImpl>()}));
+    Get.put(AutoCompleteRepositoryImpl({
+      Get.find<TMailContactDataSourceImpl>(),
+      Get.find<CardDavContactDataSourceImpl>(),
+    }));
   }
 
   @override
