@@ -1,3 +1,4 @@
+import 'dart:html' as html;
 import 'package:jmap_dart_client/jmap/account_id.dart';
 import 'package:jmap_dart_client/jmap/core/capability/capability_identifier.dart';
 import 'package:jmap_dart_client/jmap/core/id.dart';
@@ -14,13 +15,13 @@ class CalendarEventCapabilityRegistry {
 
   CalendarEventCapabilityRegistry._();
 
+  static const _storagePrefix = 'tmail_rsvp_';
+
   bool _isJames = false;
   bool _isIetf = false;
   String? _userEmail;
   MailboxId? _sentMailboxId;
   final Map<Id, CalendarEvent> _parsedEvents = {};
-  /// Persists attendance status by event UID so it survives email reopen.
-  final Map<String, AttendanceStatus> _attendanceByEventUid = {};
 
   void configure(Session session, AccountId accountId) {
     _isJames = CalendarEventCapabilityHelper.isJamesSupported(session, accountId);
@@ -44,13 +45,24 @@ class CalendarEventCapabilityRegistry {
   void cacheEvent(Id blobId, CalendarEvent event) => _parsedEvents[blobId] = event;
   CalendarEvent? getEvent(Id blobId) => _parsedEvents[blobId];
 
-  /// Store the user's RSVP response for a given event UID so it persists across email reopens.
-  void setAttendanceStatus(String eventUid, AttendanceStatus status) =>
-      _attendanceByEventUid[eventUid] = status;
+  /// Store the user's RSVP response for a given event UID.
+  /// Persisted to localStorage so it survives page reloads.
+  void setAttendanceStatus(String eventUid, AttendanceStatus status) {
+    try {
+      html.window.localStorage['$_storagePrefix$eventUid'] = status.name;
+    } catch (_) {}
+  }
 
   /// Retrieve the persisted attendance status for a given event UID.
-  AttendanceStatus? getAttendanceStatus(String eventUid) =>
-      _attendanceByEventUid[eventUid];
+  AttendanceStatus? getAttendanceStatus(String eventUid) {
+    try {
+      final stored = html.window.localStorage['$_storagePrefix$eventUid'];
+      if (stored == null) return null;
+      return AttendanceStatus.values.where((s) => s.name == stored).firstOrNull;
+    } catch (_) {
+      return null;
+    }
+  }
 
   bool get isJames => _isJames;
   bool get isIetf => _isIetf && !_isJames;

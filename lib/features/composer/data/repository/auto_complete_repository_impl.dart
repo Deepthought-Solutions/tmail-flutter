@@ -17,16 +17,31 @@ class AutoCompleteRepositoryImpl extends AutoCompleteRepository {
       log('AutoCompleteRepositoryImpl::getAutoComplete(): autoCompleteDataSources IS NULL');
       return [];
     }
-   final listEmailAddress = await Future
-       .wait(autoCompleteDataSources.map(
-           (datasource) => datasource.getAutoComplete(autoCompletePattern)))
-       .then((newListResult) {
-          List<EmailAddress> listEmailAddress = <EmailAddress>[];
-          for (var listEmails in newListResult) {
-            listEmailAddress.addAll(listEmails);
-          }
-          return listEmailAddress;
-        });
+    // Query all data sources in parallel, catch individual errors
+    // so one failing source doesn't block the others
+    final results = await Future.wait(
+      autoCompleteDataSources.map((datasource) =>
+        datasource.getAutoComplete(autoCompletePattern).catchError((error) {
+          log('AutoCompleteRepositoryImpl::getAutoComplete: '
+              '${datasource.runtimeType} failed: $error');
+          return <EmailAddress>[];
+        })
+      ),
+    );
+
+    final listEmailAddress = <EmailAddress>[];
+    for (final list in results) {
+      listEmailAddress.addAll(list);
+    }
+
+    // Deduplicate by email address
+    final seen = <String>{};
+    listEmailAddress.retainWhere((addr) {
+      final email = addr.email?.toLowerCase() ?? '';
+      if (email.isEmpty || seen.contains(email)) return false;
+      seen.add(email);
+      return true;
+    });
 
     return listEmailAddress;
   }
