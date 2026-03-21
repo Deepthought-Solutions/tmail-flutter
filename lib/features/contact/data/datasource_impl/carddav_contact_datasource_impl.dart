@@ -15,14 +15,18 @@ class CardDavContactDataSourceImpl extends AutoCompleteDataSource {
 
   @override
   Future<List<EmailAddress>> getAutoComplete(AutoCompletePattern autoCompletePattern) async {
+    log('CardDavContactDataSourceImpl::getAutoComplete: query="${autoCompletePattern.word}"');
     try {
       final dynamicUrlInterceptors = Get.find<DynamicUrlInterceptors>();
       final baseUrl = dynamicUrlInterceptors.jmapUrl;
+      log('CardDavContactDataSourceImpl::getAutoComplete: jmapUrl=$baseUrl');
+
       final dashboardController = Get.find<MailboxDashBoardController>();
       final username = dashboardController.sessionCurrent?.username.value;
+      log('CardDavContactDataSourceImpl::getAutoComplete: username=$username');
 
       if (baseUrl == null || username == null) {
-        log('CardDavContactDataSourceImpl::getAutoComplete: baseUrl or username is null');
+        log('CardDavContactDataSourceImpl::getAutoComplete: baseUrl or username is null, returning empty');
         return [];
       }
 
@@ -32,6 +36,8 @@ class CardDavContactDataSourceImpl extends AutoCompleteDataSource {
       // Stalwart uses short username in DAV paths
       final davUsername = username.contains('@') ? username.split('@')[0] : username;
 
+      log('CardDavContactDataSourceImpl::getAutoComplete: searching CardDAV at $serverBase/dav/card/$davUsername/default/');
+
       final results = await _cardDavApi.searchContacts(
         baseUrl: serverBase,
         username: davUsername,
@@ -39,12 +45,12 @@ class CardDavContactDataSourceImpl extends AutoCompleteDataSource {
         limit: autoCompletePattern.limit ?? 10,
       );
 
-      log('CardDavContactDataSourceImpl::getAutoComplete: '
-          'found ${results.length} CardDAV contacts for "${autoCompletePattern.word}"');
+      log('CardDavContactDataSourceImpl::getAutoComplete: found ${results.length} CardDAV contacts');
 
       return results;
-    } catch (e) {
-      log('CardDavContactDataSourceImpl::getAutoComplete: error $e');
+    } catch (e, stackTrace) {
+      log('CardDavContactDataSourceImpl::getAutoComplete: ERROR $e');
+      log('CardDavContactDataSourceImpl::getAutoComplete: stackTrace=$stackTrace');
       return [];
     }
   }

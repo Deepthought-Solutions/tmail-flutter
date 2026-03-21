@@ -325,10 +325,15 @@ abstract class BaseController extends GetxController
   void injectAutoCompleteBindings(Session? session, AccountId? accountId) {
     try {
       ContactAutoCompleteBindings().dependencies();
-      requireCapability(session!, accountId!, [tmailContactCapabilityIdentifier]);
+    } catch (e) {
+      logWarning('$runtimeType::injectAutoCompleteBindings(): ContactAutoCompleteBindings failed: $e');
+    }
+    // TMailAutoCompleteBindings must run regardless of TMailContact capability
+    // because CardDAV autocomplete works with any CalDAV server (not just James)
+    try {
       TMailAutoCompleteBindings().dependencies();
     } catch (e) {
-      logWarning('$runtimeType::injectAutoCompleteBindings(): exception: $e');
+      logWarning('$runtimeType::injectAutoCompleteBindings(): TMailAutoCompleteBindings failed: $e');
     }
   }
 

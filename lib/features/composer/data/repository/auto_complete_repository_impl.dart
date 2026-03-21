@@ -13,8 +13,11 @@ class AutoCompleteRepositoryImpl extends AutoCompleteRepository {
 
   @override
   Future<List<EmailAddress>> getAutoComplete(AutoCompletePattern autoCompletePattern) async {
+    log('AutoCompleteRepositoryImpl::getAutoComplete: query="${autoCompletePattern.word}" '
+        'datasources=${autoCompleteDataSources.length} '
+        'types=${autoCompleteDataSources.map((d) => d.runtimeType).toList()}');
     if (autoCompleteDataSources.isEmpty) {
-      log('AutoCompleteRepositoryImpl::getAutoComplete(): autoCompleteDataSources IS NULL');
+      log('AutoCompleteRepositoryImpl::getAutoComplete: NO datasources available');
       return [];
     }
     // Query all data sources in parallel, catch individual errors
