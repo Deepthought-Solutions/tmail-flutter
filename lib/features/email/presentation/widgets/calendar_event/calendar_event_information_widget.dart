@@ -274,7 +274,7 @@ class CalendarEventInformationWidget extends StatelessWidget {
       final dateStr =
           '${eventDate!.year}-${eventDate!.month.toString().padLeft(2, '0')}-${eventDate!.day.toString().padLeft(2, '0')}';
       final separator = url.contains('?') ? '&' : '?';
-      url = '$url${separator}date=$dateStr&view=timeGridDay';
+      url = '$url${separator}date=$dateStr';
     }
     AppUtils.launchLink(url);
   }

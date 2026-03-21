@@ -1396,13 +1396,16 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
     }
 
     final subject = email.subject ?? '';
-    final title = Uri.encodeComponent('Re: $subject');
-    final attendees = Uri.encodeComponent(recipients.join(','));
     final today = DateTime.now();
     final date = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
-    final separator = calendarUrl.contains('?') ? '&' : '?';
-    final url = '$calendarUrl${separator}new=1&title=$title&attendees=$attendees&date=$date';
+    final uri = Uri.parse(calendarUrl).replace(queryParameters: {
+      'new': '1',
+      'title': 'Re: $subject',
+      'attendees': recipients.join(','),
+      'date': date,
+    });
+    final url = uri.toString();
 
     AppUtils.launchLink(url);
   }
