@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:core/core.dart';
+import 'package:tmail_ui_user/features/contact/data/network/carddav_api.dart';
 import 'package:tmail_ui_user/main/utils/app_config.dart';
 import 'package:core/presentation/utils/html_transformer/text/new_line_transformer.dart';
 import 'package:core/presentation/utils/html_transformer/text/sanitize_autolink_unescape_html_transformer.dart';
@@ -583,6 +584,9 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
 
   void _getEmailContentSuccess(GetEmailContentSuccess success) {
     emailLoadedViewState.value = Right<Failure, Success>(success);
+
+    // Sync sender to CardDAV collected addressbook on email view
+    _syncSenderToCollected(success.emailCurrent);
 
     currentEmailLoaded.value = EmailLoaded(
       htmlContent: success.htmlEmailContent,
@@ -1375,6 +1379,38 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
       ownEmailAddress: accountDisplayName,
       emailLoaded: currentEmailLoaded.value!,
     ));
+  }
+
+  void _syncSenderToCollected(Email? email) {
+    if (email == null || email.from == null || email.from!.isEmpty) return;
+    try {
+      final dynamicUrlInterceptors = Get.find<DynamicUrlInterceptors>();
+      final baseUrl = dynamicUrlInterceptors.jmapUrl;
+      if (baseUrl == null) return;
+
+      final dashboardController = mailboxDashBoardController;
+      final username = dashboardController.sessionCurrent?.username.value;
+      if (username == null) return;
+
+      final serverBase = baseUrl.replaceAll(RegExp(r'/jmap$'), '');
+      final davUsername = username.contains('@') ? username.split('@')[0] : username;
+
+      final cardDavApi = Get.find<CardDavApi>();
+      for (final sender in email.from!) {
+        final senderEmail = sender.email;
+        final senderName = sender.displayName;
+        if (senderEmail != null && senderEmail.isNotEmpty) {
+          cardDavApi.saveContact(
+            baseUrl: serverBase,
+            username: davUsername,
+            displayName: senderName ?? senderEmail.split('@')[0],
+            email: senderEmail,
+          ).catchError((_) {});
+        }
+      }
+    } catch (e) {
+      log('_syncSenderToCollected: failed $e');
+    }
   }
 
   void _openCreateMeeting(PresentationEmail email) {
