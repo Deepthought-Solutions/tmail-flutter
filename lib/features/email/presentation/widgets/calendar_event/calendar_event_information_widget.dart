@@ -8,6 +8,8 @@ import 'package:tmail_ui_user/features/email/presentation/extensions/calendar_ev
 import 'package:tmail_ui_user/features/email/presentation/styles/calendar_event_detail_widget_styles.dart';
 import 'package:tmail_ui_user/features/email/presentation/styles/calendar_event_information_widget_styles.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_date_icon_widget.dart';
+import 'package:core/presentation/views/button/tmail_button_widget.dart';
+import 'package:tmail_ui_user/features/email/presentation/styles/calendar_event_action_button_widget_styles.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_event_action_button_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/calendar_event_detail_widget.dart';
 import 'package:tmail_ui_user/features/email/presentation/widgets/calendar_event/event_attendee_detail_widget.dart';
@@ -238,23 +240,30 @@ class CalendarEventInformationWidget extends StatelessWidget {
 
   Widget _buildViewInCalendarButton(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: OutlinedButton.icon(
-        onPressed: _openCalendar,
-        icon: const Icon(Icons.calendar_today, size: 16),
-        label: Text(AppLocalizations.of(context).viewInCalendar),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColor.primaryColor,
-          side: const BorderSide(color: AppColor.primaryColor, width: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          textStyle: ThemeUtils.defaultTextStyleInterFont.copyWith(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
+      padding: isPortraitMobile
+          ? CalendarEventActionButtonWidgetStyles.paddingMobile
+          : const EdgeInsetsDirectional.only(start: 100, end: 16, top: 8),
+      child: TMailButtonWidget(
+        text: AppLocalizations.of(context).viewInCalendar,
+        icon: imagePaths.icCalendar,
+        borderRadius: CalendarEventActionButtonWidgetStyles.borderRadius,
+        padding: CalendarEventActionButtonWidgetStyles.buttonPadding,
+        backgroundColor: CalendarEventActionButtonWidgetStyles.backgroundColor,
+        iconSize: 16,
+        iconColor: CalendarEventActionButtonWidgetStyles.textColor,
+        textStyle: ThemeUtils.defaultTextStyleInterFont.copyWith(
+          fontWeight: CalendarEventActionButtonWidgetStyles.fontWeight,
+          fontSize: CalendarEventActionButtonWidgetStyles.textSize,
+          color: CalendarEventActionButtonWidgetStyles.textColor,
         ),
+        textAlign: TextAlign.center,
+        minWidth: CalendarEventActionButtonWidgetStyles.minWidth,
+        width: isPortraitMobile ? double.infinity : null,
+        border: Border.all(
+          width: CalendarEventActionButtonWidgetStyles.borderWidth,
+          color: CalendarEventActionButtonWidgetStyles.textColor,
+        ),
+        onTapActionCallback: _openCalendar,
       ),
     );
   }

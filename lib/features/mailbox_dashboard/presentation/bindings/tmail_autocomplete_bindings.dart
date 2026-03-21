@@ -1,6 +1,8 @@
 
+import 'package:core/utils/app_logger.dart';
 import 'package:get/get.dart';
 import 'package:tmail_ui_user/features/base/interactors_bindings.dart';
+import 'package:tmail_ui_user/features/contact/data/datasource/auto_complete_datasource.dart';
 import 'package:tmail_ui_user/features/composer/data/repository/auto_complete_repository_impl.dart';
 import 'package:tmail_ui_user/features/composer/domain/repository/auto_complete_repository.dart';
 import 'package:tmail_ui_user/features/composer/domain/usecases/get_autocomplete_interactor.dart';
@@ -20,9 +22,13 @@ class TMailAutoCompleteBindings extends InteractorsBindings {
       Get.find<ContactAPI>(),
       Get.find<RemoteExceptionThrower>(),
     ));
-    Get.put(CardDavContactDataSourceImpl(
-      Get.find<CardDavApi>(),
-    ));
+    try {
+      Get.put(CardDavContactDataSourceImpl(
+        Get.find<CardDavApi>(),
+      ));
+    } catch (e) {
+      log('TMailAutoCompleteBindings: CardDavApi not found, CardDAV autocomplete disabled: $e');
+    }
   }
 
   @override
@@ -41,10 +47,13 @@ class TMailAutoCompleteBindings extends InteractorsBindings {
 
   @override
   void bindingsRepositoryImpl() {
-    Get.put(AutoCompleteRepositoryImpl({
+    final dataSources = <AutoCompleteDataSource>{
       Get.find<TMailContactDataSourceImpl>(),
-      Get.find<CardDavContactDataSourceImpl>(),
-    }));
+    };
+    if (Get.isRegistered<CardDavContactDataSourceImpl>()) {
+      dataSources.add(Get.find<CardDavContactDataSourceImpl>());
+    }
+    Get.put(AutoCompleteRepositoryImpl(dataSources));
   }
 
   @override
