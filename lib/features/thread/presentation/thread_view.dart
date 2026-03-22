@@ -1,5 +1,7 @@
 import 'package:core/core.dart';
 import 'package:dartz/dartz.dart';
+import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/widgets/calendar_button_widget.dart';
+import 'package:tmail_ui_user/main/utils/app_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -349,9 +351,22 @@ class ThreadView extends GetWidget<ThreadController>
           padding: PlatformInfo.isMobile && controller.listEmailSelected.isNotEmpty
             ? EdgeInsets.only(bottom: controller.responsiveUtils.isTabletLarge(context) ? 85 : 70)
             : EdgeInsets.zero,
-          child: ComposeFloatingButton(
-            scrollController: controller.listEmailController,
-            onTap: () => controller.mailboxDashBoardController.openComposer(ComposerArguments())
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ComposeFloatingButton(
+                scrollController: controller.listEmailController,
+                onTap: () => controller.mailboxDashBoardController.openComposer(ComposerArguments())
+              ),
+              if (AppConfig.calendarUrl != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: CalendarButtonWidget(
+                    imagePaths: controller.imagePaths,
+                    calendarUrl: AppConfig.calendarUrl!,
+                  ),
+                ),
+            ],
           ),
         );
       } else {

@@ -1,7 +1,7 @@
 
 class MailboxItemWidgetStyles {
   static const double selectionIconSize = 20;
-  static const double itemPadding = 10;
+  static const double itemPadding = 4;
   static const double mobileItemPadding = 12;
   static const double borderRadius = 8;
   static const double mobileBorderRadius = 10;

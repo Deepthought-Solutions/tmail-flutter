@@ -275,31 +275,39 @@ class CalendarEventInformationWidget extends StatelessWidget {
   }
 
   Widget _buildCompactCalendarButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: SizedBox(
+    return GestureDetector(
+      onTap: _openCalendar,
+      child: Container(
         width: 100,
-        child: OutlinedButton.icon(
-          onPressed: _openCalendar,
-          icon: Icon(Icons.calendar_month, size: 16, color: AppColor.primaryColor),
-          label: Text(
-            AppLocalizations.of(context).viewInCalendar,
-            style: ThemeUtils.defaultTextStyleInterFont.copyWith(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: AppColor.primaryColor,
-            ),
-            maxLines: 2,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
+        height: 80,
+        margin: const EdgeInsets.only(top: 4),
+        decoration: BoxDecoration(
+          color: AppColor.primaryColor.withValues(alpha: 0.08),
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(12),
+            bottomRight: Radius.circular(12),
           ),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            side: BorderSide(color: AppColor.primaryColor),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+          border: Border.all(
+            color: AppColor.primaryColor.withValues(alpha: 0.3),
+            width: 0.5,
           ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.calendar_month, size: 28, color: AppColor.primaryColor),
+            const SizedBox(height: 4),
+            Text(
+              AppLocalizations.of(context).viewInCalendar,
+              style: ThemeUtils.defaultTextStyleInterFont.copyWith(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColor.primaryColor,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+            ),
+          ],
         ),
       ),
     );

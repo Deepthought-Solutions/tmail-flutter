@@ -323,7 +323,7 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
                                     return Row(
                                       children: [
                                         Flexible(
-                                          flex: 3,
+                                          flex: 4,
                                           child: MediaQuery(
                                             data: MediaQuery.of(context).copyWith(
                                               size: const Size(400, 800),
@@ -333,7 +333,7 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
                                         ),
                                         const VerticalDivider(width: 1),
                                         Flexible(
-                                          flex: 7,
+                                          flex: 6,
                                           child: route == DashboardRoutes.threadDetailed
                                               ? const ThreadDetailView()
                                               : const EmailViewEmptyWidget(),

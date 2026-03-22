@@ -37,11 +37,6 @@ class MailboxView extends BaseMailboxView {
                 child: buildListMailbox(context),
               ),
             ),
-            if (AppConfig.calendarUrl != null)
-              CalendarButtonWidget(
-                imagePaths: controller.imagePaths,
-                calendarUrl: AppConfig.calendarUrl!,
-              ),
             const QuotasView(),
             Container(
               alignment: AlignmentDirectional.centerStart,
