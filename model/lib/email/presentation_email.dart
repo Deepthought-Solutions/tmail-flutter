@@ -124,7 +124,27 @@ class PresentationEmail with EquatableMixin, SearchSnippetMixin {
 
   String getEmailTitle() => subject?.trim() ?? '';
 
-  String getPartialContent() => preview?.trim() ?? '';
+  String getPartialContent() {
+    final raw = preview?.trim() ?? '';
+    if (raw.isEmpty) return raw;
+
+    // Split into lines and skip empty ones
+    final lines = raw.split(RegExp(r'\r?\n'));
+    final nonEmpty = lines.where((l) => l.trim().isNotEmpty).toList();
+    if (nonEmpty.isEmpty) return raw;
+
+    final first = nonEmpty.first.trim();
+    // Skip greeting line: short (<20 chars) or ends with comma and <25 chars
+    final isGreeting = first.length < 20 ||
+        (first.length < 25 && first.endsWith(','));
+
+    if (isGreeting && nonEmpty.length > 1) {
+      final second = nonEmpty[1].trim();
+      if (second.length > 10) return second;
+    }
+
+    return first;
+  }
 
   bool get hasRead => keywords?.containsKey(KeyWordIdentifier.emailSeen) == true;
 

@@ -1339,7 +1339,7 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
       }
 
       // Build ICS from the parsed calendar event data
-      final String organizer = '${event.organizer?.mailto ?? ''}';
+      final String organizer = '${event.organizer?.mailto?.value ?? ''}';
       final String summary = '${event.title ?? 'Untitled Event'}';
       final String locationStr = '${event.location ?? ''}';
       final startDate = event.localStartDate;
@@ -1358,7 +1358,7 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
           'SUMMARY:$summary\r\n'
           '${locationStr.isNotEmpty ? 'LOCATION:$locationStr\r\n' : ''}'
           'DTSTART:${formatUtc(startDate)}\r\n'
-          '${endDate != null ? 'DTEND:${formatUtc(endDate)}\r\n' : ''}'
+          'DTEND:${formatUtc(endDate ?? startDate.add(const Duration(hours: 1)))}\r\n'
           'DTSTAMP:${formatUtc(DateTime.now())}\r\n'
           '${organizer.isNotEmpty ? 'ORGANIZER:mailto:$organizer\r\n' : ''}'
           'ATTENDEE;PARTSTAT=$partstat;RSVP=FALSE:mailto:$userEmail\r\n'

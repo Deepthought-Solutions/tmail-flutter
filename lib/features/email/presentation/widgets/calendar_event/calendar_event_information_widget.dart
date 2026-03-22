@@ -275,7 +275,9 @@ class CalendarEventInformationWidget extends StatelessWidget {
   }
 
   Widget _buildCompactCalendarButton(BuildContext context) {
-    return GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
       onTap: _openCalendar,
       child: Container(
         width: 100,
@@ -309,6 +311,7 @@ class CalendarEventInformationWidget extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

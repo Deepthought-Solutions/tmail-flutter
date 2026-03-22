@@ -1,7 +1,7 @@
 import 'package:core/core.dart';
 import 'package:dartz/dartz.dart';
-import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/widgets/calendar_button_widget.dart';
 import 'package:tmail_ui_user/main/utils/app_config.dart';
+import 'package:tmail_ui_user/main/utils/app_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -361,9 +361,38 @@ class ThreadView extends GetWidget<ThreadController>
               if (AppConfig.calendarUrl != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: CalendarButtonWidget(
-                    imagePaths: controller.imagePaths,
-                    calendarUrl: AppConfig.calendarUrl!,
+                  child: Material(
+                    color: const Color(0xFF0D8A72),
+                    borderRadius: BorderRadius.circular(30),
+                    elevation: 4,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(30),
+                      onTap: () {
+                        final today = DateTime.now();
+                        final dateStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+                        AppUtils.launchLink('${AppConfig.calendarUrl}?date=$dateStr&view=timeGridWeek');
+                      },
+                      child: Container(
+                        width: 154,
+                        height: 48,
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.calendar_month, color: Colors.white, size: 22),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Calendrier',
+                              style: ThemeUtils.defaultTextStyleInterFont.copyWith(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
             ],
