@@ -89,6 +89,17 @@ class ThreadRepositoryImpl extends ThreadRepository {
           propertiesCreated: propertiesCreated,
         );
       }
+      logTrace(
+        'ThreadRepositoryImpl::getAllEmail(): '
+        'CachedEmail = ${localEmailResponse.emailList?.length}, '
+        'CachedNotFoundEmailIds = ${localEmailResponse.notFoundEmailIds?.length}, '
+        'CachedState = ${localEmailResponse.state?.value}, '
+        'NetworkEmail = ${networkEmailResponse.emailList?.length}, '
+        'NetworkNotFoundEmailIds = ${networkEmailResponse.notFoundEmailIds?.length}, '
+        'NetworkState = ${networkEmailResponse.state?.value}, '
+        'Limit = ${limit?.value}, '
+        'MailboxId = ${emailFilter?.mailboxId?.asString}',
+      );
       yield networkEmailResponse;
     } else {
       yield localEmailResponse;
@@ -136,6 +147,13 @@ class ThreadRepositoryImpl extends ThreadRepository {
       return EmailsResponse(emailList: response.first, state: response.last);
     });
 
+    logTrace(
+      'ThreadRepositoryImpl::getAllEmail(): '
+      'DisplayedCachedEmail = ${newEmailResponse.emailList?.length}, '
+      'DisplayedNotFoundEmailIds = ${newEmailResponse.notFoundEmailIds?.length}, '
+      'DisplayedState = ${newEmailResponse.state?.value}',
+    );
+
     yield newEmailResponse;
   }
 
@@ -182,14 +200,17 @@ class ThreadRepositoryImpl extends ThreadRepository {
     );
 
     final serverCount = serverResponse.emailList?.length ?? 0;
+    final notFoundEmailIds = serverResponse.notFoundEmailIds ?? [];
+    final stateResponse = cachedState ?? serverResponse.state;
 
-    log(
+    logTrace(
       'ThreadRepositoryImpl::forceQueryAllEmailsForWeb(): '
-      'Server email count = $serverCount',
+      'ServerEmailCount = $serverCount, '
+      'ServerNotFoundEmailIds = ${notFoundEmailIds.length}, '
+      'StateResponse = ${stateResponse?.value}',
     );
 
-    if (serverCount > 0 ||
-        (serverResponse.notFoundEmailIds?.isNotEmpty ?? false)) {
+    if (serverCount > 0 || notFoundEmailIds.isNotEmpty) {
       await _updateEmailCache(
         accountId,
         session.username,
@@ -201,7 +222,7 @@ class ThreadRepositoryImpl extends ThreadRepository {
     // Combine server list + keep existing state
     yield EmailsResponse(
       emailList: serverResponse.emailList,
-      state: cachedState ?? serverResponse.state,
+      state: stateResponse,
     );
   }
 
@@ -364,13 +385,8 @@ class ThreadRepositoryImpl extends ThreadRepository {
       return EmailsResponse(emailList: response.first, state: response.last);
     });
 
-    final currentLimitEmails =
-        limit?.value ?? ThreadConstants.defaultLimit.value;
-
-    log('ThreadRepositoryImpl::refreshChanges: Current limit emails is $currentLimitEmails');
-
     if (!newEmailResponse.hasEmails()
-        || (newEmailResponse.emailList?.length ?? 0) < currentLimitEmails) {
+        || (newEmailResponse.emailList?.length ?? 0) < ThreadConstants.defaultLimit.value) {
       final networkEmailResponse = await _getFirstPage(
         session,
         accountId,
@@ -380,9 +396,26 @@ class ThreadRepositoryImpl extends ThreadRepository {
         mailboxId: emailFilter?.mailboxId,
         propertiesCreated: propertiesCreated,
       );
-
+      logTrace(
+        'ThreadRepositoryImpl::refreshChanges():'
+        'CountEmailCached = ${newEmailResponse.emailList?.length}, '
+        'EmailStateCache = ${newEmailResponse.state?.value}, '
+        'InMailboxId = ${emailFilter?.mailboxId?.asString}, '
+        'Limit = ${limit?.value.toInt()}, '
+        'DefaultLimit = ${ThreadConstants.defaultLimit.value.toInt()}, '
+        'CountEmailNetwork = ${networkEmailResponse.emailList?.length}, '
+        'EmailStateNetwork = ${networkEmailResponse.state?.value}, ',
+      );
       yield networkEmailResponse.copyWith(emailChangeResponse: emailChangeResponse);
     } else {
+      logTrace(
+        'ThreadRepositoryImpl::refreshChanges():'
+        'CountEmailCached = ${newEmailResponse.emailList?.length}, '
+        'EmailStateCache = ${newEmailResponse.state?.value}, '
+        'InMailboxId = ${emailFilter?.mailboxId?.asString}, '
+        'Limit = ${limit?.value.toInt()}, '
+        'DefaultLimit = ${ThreadConstants.defaultLimit.value.toInt()}, ',
+      );
       yield newEmailResponse.copyWith(emailChangeResponse: emailChangeResponse);
     }
   }
@@ -398,6 +431,12 @@ class ThreadRepositoryImpl extends ThreadRepository {
         newDestroyed: response.notFoundEmailIds,
       );
     }
+    logTrace(
+      'ThreadRepositoryImpl::loadMoreEmails(): emailList = ${response.emailList?.length},'
+      'notFoundEmailIds = ${response.notFoundEmailIds?.length}, '
+      'existNotFoundEmails = ${response.existNotFoundEmails}, '
+      'state = ${response.state?.value}',
+    );
     yield response;
   }
 

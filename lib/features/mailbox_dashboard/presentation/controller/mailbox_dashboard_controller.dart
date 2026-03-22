@@ -3064,7 +3064,7 @@ class MailboxDashBoardController extends ReloadableController
   void _replaceBrowserHistory({Uri? uri}) {
     log('MailboxDashBoardController::_replaceBrowserHistory:uri: $uri');
     if (PlatformInfo.isWeb) {
-      final selectedMailboxId = selectedMailbox.value?.id;
+      final currentMailbox = selectedMailbox.value;
       final selectedEmailId = selectedEmail.value?.id;
       final isSearchRunning = searchController.isSearchEmailRunning;
       String title = '';
@@ -3073,7 +3073,7 @@ class MailboxDashBoardController extends ReloadableController
       } else if (isSearchRunning) {
         title = 'SearchEmail';
       } else {
-        title = 'Mailbox-${selectedMailboxId?.asString}';
+        title = currentMailbox?.browserRouteTitle ?? '';
       }
       RouteUtils.replaceBrowserHistory(
         title: title,
@@ -3083,7 +3083,8 @@ class MailboxDashBoardController extends ReloadableController
             emailId: selectedEmail.value?.id,
             mailboxId: isSearchRunning
               ? null
-              : selectedMailboxId,
+              : currentMailbox?.browserRouteMailboxId,
+            labelId: currentMailbox?.labelId,
             dashboardType: isSearchRunning
               ? DashboardType.search
               : DashboardType.normal,
