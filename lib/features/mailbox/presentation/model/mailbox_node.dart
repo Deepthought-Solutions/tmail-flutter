@@ -161,15 +161,32 @@ extension MailboxNodeExtension on MailboxNode {
     );
   }
 
+  static const _roleOrder = {
+    'inbox': 0,
+    'sent': 1,
+    'drafts': 2,
+    'favorites': 3,
+    'junk': 4,
+    'trash': 5,
+  };
+
   int compareTo(MailboxNode other) {
-    if (item.sortOrder == null) {
-      return -1;
-    }
+    final myRole = item.role?.value;
+    final otherRole = other.item.role?.value;
+    final myOrder = myRole != null ? _roleOrder[myRole] : null;
+    final otherOrder = otherRole != null ? _roleOrder[otherRole] : null;
 
-    if (other.item.sortOrder == null) {
-      return 1;
+    // Both have role-based order → sort by role
+    if (myOrder != null && otherOrder != null) {
+      return myOrder.compareTo(otherOrder);
     }
+    // Only one has role-based order → it comes first
+    if (myOrder != null) return -1;
+    if (otherOrder != null) return 1;
 
+    // Fallback to sortOrder
+    if (item.sortOrder == null) return -1;
+    if (other.item.sortOrder == null) return 1;
     return item.sortOrder!.value.value.compareTo(other.item.sortOrder!.value.value);
   }
 }

@@ -175,8 +175,6 @@ class CalendarEventInformationWidget extends StatelessWidget {
                 calendarEvent.participants,
               ),
             ),
-          if (calendarUrl != null)
-            _buildViewInCalendarButton(context),
         ],
       ),
     );
@@ -206,13 +204,21 @@ class CalendarEventInformationWidget extends StatelessWidget {
                 width: double.infinity,
               ),
               bodyWidget,
+              if (calendarUrl != null)
+                _buildViewInCalendarButton(context),
             ],
           )
         : IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CalendarDateIconWidget(calendarEvent: calendarEvent),
+                Column(
+                  children: [
+                    CalendarDateIconWidget(calendarEvent: calendarEvent),
+                    if (calendarUrl != null)
+                      _buildCompactCalendarButton(context),
+                  ],
+                ),
                 Expanded(child: bodyWidget),
               ],
             ),
@@ -264,6 +270,37 @@ class CalendarEventInformationWidget extends StatelessWidget {
           color: CalendarEventActionButtonWidgetStyles.textColor,
         ),
         onTapActionCallback: _openCalendar,
+      ),
+    );
+  }
+
+  Widget _buildCompactCalendarButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: SizedBox(
+        width: 100,
+        child: OutlinedButton.icon(
+          onPressed: _openCalendar,
+          icon: Icon(Icons.calendar_month, size: 16, color: AppColor.primaryColor),
+          label: Text(
+            AppLocalizations.of(context).viewInCalendar,
+            style: ThemeUtils.defaultTextStyleInterFont.copyWith(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColor.primaryColor,
+            ),
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            side: BorderSide(color: AppColor.primaryColor),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
       ),
     );
   }

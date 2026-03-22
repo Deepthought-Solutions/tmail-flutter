@@ -3,8 +3,10 @@ import 'package:core/utils/platform_info.dart';
 import 'package:flutter/material.dart';
 import 'package:tmail_ui_user/features/base/widget/application_version_widget.dart';
 import 'package:tmail_ui_user/features/mailbox/presentation/base_mailbox_view.dart';
+import 'package:tmail_ui_user/features/mailbox_dashboard/presentation/widgets/calendar_button_widget.dart';
 import 'package:tmail_ui_user/features/quotas/presentation/quotas_view.dart';
 import 'package:tmail_ui_user/main/localizations/app_localizations.dart';
+import 'package:tmail_ui_user/main/utils/app_config.dart';
 
 class MailboxView extends BaseMailboxView {
 
@@ -35,6 +37,11 @@ class MailboxView extends BaseMailboxView {
                 child: buildListMailbox(context),
               ),
             ),
+            if (AppConfig.calendarUrl != null)
+              CalendarButtonWidget(
+                imagePaths: controller.imagePaths,
+                calendarUrl: AppConfig.calendarUrl!,
+              ),
             const QuotasView(),
             Container(
               alignment: AlignmentDirectional.centerStart,

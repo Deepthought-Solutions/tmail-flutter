@@ -328,7 +328,10 @@ class ThreadView extends GetWidget<ThreadController>
   }
 
   Widget _buildFloatingButtonCompose(BuildContext context) {
-    if (controller.responsiveUtils.isWebDesktop(context)) {
+    // Hide compose button when desktop sidebar is visible (real screen width, not MediaQuery)
+    if (PlatformInfo.isWeb &&
+        View.of(context).physicalSize.width /
+        View.of(context).devicePixelRatio >= ResponsiveUtils.minDesktopWidth) {
       return const SizedBox.shrink();
     }
 

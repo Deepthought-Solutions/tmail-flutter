@@ -323,20 +323,17 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
                                     return Row(
                                       children: [
                                         Flexible(
-                                          flex: 2,
-                                          child: ConstrainedBox(
-                                            constraints: const BoxConstraints(maxWidth: 400),
-                                            child: MediaQuery(
-                                              data: MediaQuery.of(context).copyWith(
-                                                size: const Size(400, 800),
-                                              ),
-                                              child: _buildThreadViewForWebDesktop(context),
+                                          flex: 3,
+                                          child: MediaQuery(
+                                            data: MediaQuery.of(context).copyWith(
+                                              size: const Size(400, 800),
                                             ),
+                                            child: _buildThreadViewForWebDesktop(context),
                                           ),
                                         ),
                                         const VerticalDivider(width: 1),
                                         Flexible(
-                                          flex: 5,
+                                          flex: 7,
                                           child: route == DashboardRoutes.threadDetailed
                                               ? const ThreadDetailView()
                                               : const EmailViewEmptyWidget(),
