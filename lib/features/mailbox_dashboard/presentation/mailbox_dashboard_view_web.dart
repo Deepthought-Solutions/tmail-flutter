@@ -324,7 +324,12 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
                                       children: [
                                         SizedBox(
                                           width: 420,
-                                          child: _buildThreadViewForWebDesktop(context),
+                                          child: MediaQuery(
+                                            data: MediaQuery.of(context).copyWith(
+                                              size: const Size(400, 800),
+                                            ),
+                                            child: _buildThreadViewForWebDesktop(context),
+                                          ),
                                         ),
                                         const VerticalDivider(width: 1),
                                         Expanded(

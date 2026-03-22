@@ -4,8 +4,87 @@ import 'package:tmail_ui_user/features/email/domain/model/caldav_conflict.dart';
 
 class CalDavApi {
   final Dio _dio;
+  String? _calendarPath;
 
   CalDavApi(this._dio);
+
+  String? get cachedCalendarPath => _calendarPath;
+
+  /// Discover the CalDAV calendar path for the current user via PROPFIND.
+  /// Caches the result for subsequent calls.
+  Future<String?> discoverCalendarPath(String baseUrl) async {
+    if (_calendarPath != null) return _calendarPath;
+
+    log('CalDavApi::discoverCalendarPath: discovering from $baseUrl');
+
+    try {
+      // Step 1: PROPFIND on /dav/cal/ to get current-user-principal
+      final principalResponse = await _dio.request(
+        '$baseUrl/dav/cal/',
+        data: '<?xml version="1.0"?>'
+            '<d:propfind xmlns:d="DAV:">'
+            '<d:prop><d:current-user-principal/></d:prop>'
+            '</d:propfind>',
+        options: Options(
+          method: 'PROPFIND',
+          headers: {
+            'Content-Type': 'application/xml; charset=utf-8',
+            'Depth': '0',
+          },
+          responseType: ResponseType.plain,
+          validateStatus: (s) => s != null && s < 300,
+        ),
+      );
+
+      final principalXml = principalResponse.data as String;
+      final hrefMatch = RegExp(r'current-user-principal[^<]*<[^>]*href[^>]*>([^<]+)<')
+          .firstMatch(principalXml);
+      if (hrefMatch == null) return null;
+
+      final principalPath = hrefMatch.group(1)!;
+      // principalPath = /dav/pal/franck/
+      // Extract username: last non-empty segment
+      final segments = principalPath.split('/').where((s) => s.isNotEmpty).toList();
+      final username = segments.isNotEmpty ? Uri.decodeComponent(segments.last) : null;
+      if (username == null) return null;
+
+      _calendarPath = '$baseUrl/dav/cal/$username/default/';
+      log('CalDavApi::discoverCalendarPath: discovered path=$_calendarPath');
+      return _calendarPath;
+    } catch (e) {
+      log('CalDavApi::discoverCalendarPath: error=$e');
+      return null;
+    }
+  }
+
+  /// Save or update an event in CalDAV calendar via PUT.
+  /// [calendarPath] is the full URL to the CalDAV calendar collection.
+  /// [uid] is the event UID, used as the filename.
+  /// [icsData] is the full iCalendar data to save.
+  Future<bool> putEvent({
+    required String calendarPath,
+    required String uid,
+    required String icsData,
+  }) async {
+    final eventUrl = '$calendarPath${Uri.encodeComponent(uid)}.ics';
+    log('CalDavApi::putEvent: url=$eventUrl');
+    try {
+      final response = await _dio.put(
+        eventUrl,
+        data: icsData,
+        options: Options(
+          headers: {'Content-Type': 'text/calendar; charset=utf-8'},
+          validateStatus: (status) =>
+              status != null && (status == 201 || status == 204),
+        ),
+      );
+      log('CalDavApi::putEvent: status=${response.statusCode}');
+      return true;
+    } catch (e) {
+      log('CalDavApi::putEvent: error=$e');
+      return false;
+    }
+  }
 
   /// Query CalDAV server for events overlapping with [start]-[end] time range.
   /// Uses REPORT method with calendar-query and time-range filter.

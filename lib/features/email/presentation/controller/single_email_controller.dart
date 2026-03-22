@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:core/core.dart';
+import 'package:tmail_ui_user/features/email/presentation/extensions/calendar_event_extension.dart';
 import 'package:tmail_ui_user/features/contact/data/network/carddav_api.dart';
 import 'package:tmail_ui_user/main/utils/app_config.dart';
 import 'package:core/presentation/utils/html_transformer/text/new_line_transformer.dart';
@@ -1267,56 +1268,113 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
     }
   }
 
-  void _checkCalendarConflicts(CalendarEvent event) {
-    final startDate = event.startUtcDate?.value ?? event.startDate;
-    final endDate = event.endUtcDate?.value ?? event.endDate;
+  String? _calDavBaseUrl;
 
-    if (startDate == null || endDate == null) {
-      log('SingleEmailController::_checkCalendarConflicts: no start/end date');
-      return;
-    }
-
-    final userEmail = _identitySelected?.email
-        ?? mailboxDashBoardController.ownEmailAddress.value;
-    if (userEmail.isEmpty) {
-      log('SingleEmailController::_checkCalendarConflicts: no user email');
-      return;
-    }
-
-    // Extract username from email for CalDAV path
-    final username = userEmail.contains('@') ? userEmail.split('@').first : userEmail;
-    final calendarPath = '/dav/cal/$username/default/';
-
+  Future<String?> _getCalDavCalendarPath() async {
     try {
       final calDavApi = Get.find<CalDavApi>();
       final dynamicUrlInterceptors = Get.find<DynamicUrlInterceptors>();
       final baseUrl = dynamicUrlInterceptors.jmapUrl ?? dynamicUrlInterceptors.baseUrl ?? '';
+      if (baseUrl.isEmpty) return null;
 
-      if (baseUrl.isEmpty) {
-        log('SingleEmailController::_checkCalendarConflicts: no base URL');
-        return;
-      }
-
-      // Build full CalDAV URL using same origin as JMAP
       final uri = Uri.parse(baseUrl);
-      final calDavBaseUrl = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+      _calDavBaseUrl = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
 
-      log('SingleEmailController::_checkCalendarConflicts: querying $calDavBaseUrl$calendarPath');
+      return await calDavApi.discoverCalendarPath(_calDavBaseUrl!);
+    } catch (e) {
+      log('SingleEmailController::_getCalDavCalendarPath: error=$e');
+      return null;
+    }
+  }
 
+  void _checkCalendarConflicts(CalendarEvent event) {
+    final startDate = event.startUtcDate?.value ?? event.startDate;
+    final endDate = event.endUtcDate?.value ?? event.endDate;
+
+    if (startDate == null || endDate == null) return;
+
+    _getCalDavCalendarPath().then((calendarPath) {
+      if (calendarPath == null) return;
+
+      final calDavApi = Get.find<CalDavApi>();
       calDavApi.queryConflicts(
-        calendarPath: '$calDavBaseUrl$calendarPath',
+        calendarPath: calendarPath,
         start: startDate,
         end: endDate,
       ).then((conflicts) {
-        log('SingleEmailController::_checkCalendarConflicts: found ${conflicts.length} conflicts');
         conflictingEvents.value = conflicts;
-      }).catchError((error) {
-        log('SingleEmailController::_checkCalendarConflicts: error=$error');
+      }).catchError((_) {
         conflictingEvents.clear();
       });
-    } catch (e) {
-      log('SingleEmailController::_checkCalendarConflicts: setup error=$e');
-    }
+    });
+  }
+
+  void _saveEventToCalDav(CalendarEvent event, AttendanceStatus status) {
+    final eventUid = event.eventId?.id;
+    if (eventUid == null || eventUid.isEmpty) return;
+
+    final userEmail = _identitySelected?.email
+        ?? mailboxDashBoardController.ownEmailAddress.value;
+    if (userEmail.isEmpty) return;
+
+    _getCalDavCalendarPath().then((calendarPath) {
+      if (calendarPath == null) return;
+
+      final calDavApi = Get.find<CalDavApi>();
+
+      // Map AttendanceStatus to PARTSTAT string
+      String partstat;
+      switch (status) {
+        case AttendanceStatus.accepted:
+          partstat = 'ACCEPTED';
+          break;
+        case AttendanceStatus.tentativelyAccepted:
+          partstat = 'TENTATIVE';
+          break;
+        case AttendanceStatus.rejected:
+          partstat = 'DECLINED';
+          break;
+        default:
+          return; // needsAction or unknown — don't save to CalDAV
+      }
+
+      // Build ICS from the parsed calendar event data
+      final String organizer = '${event.organizer?.mailto ?? ''}';
+      final String summary = '${event.title ?? 'Untitled Event'}';
+      final String locationStr = '${event.location ?? ''}';
+      final startDate = event.localStartDate;
+      final endDate = event.localEndDate;
+
+      if (startDate == null) return;
+
+      String formatUtc(DateTime dt) =>
+          '${dt.toUtc().toIso8601String().replaceAll(RegExp(r'[-:]'), '').split('.').first}Z';
+
+      final icsData = 'BEGIN:VCALENDAR\r\n'
+          'VERSION:2.0\r\n'
+          'PRODID:-//TwakeMail//RSVP//EN\r\n'
+          'BEGIN:VEVENT\r\n'
+          'UID:$eventUid\r\n'
+          'SUMMARY:$summary\r\n'
+          '${locationStr.isNotEmpty ? 'LOCATION:$locationStr\r\n' : ''}'
+          'DTSTART:${formatUtc(startDate)}\r\n'
+          '${endDate != null ? 'DTEND:${formatUtc(endDate)}\r\n' : ''}'
+          'DTSTAMP:${formatUtc(DateTime.now())}\r\n'
+          '${organizer.isNotEmpty ? 'ORGANIZER:mailto:$organizer\r\n' : ''}'
+          'ATTENDEE;PARTSTAT=$partstat;RSVP=FALSE:mailto:$userEmail\r\n'
+          'END:VEVENT\r\n'
+          'END:VCALENDAR\r\n';
+
+      log('SingleEmailController::_saveEventToCalDav: saving UID=$eventUid PARTSTAT=$partstat');
+
+      calDavApi.putEvent(
+        calendarPath: calendarPath,
+        uid: eventUid,
+        icsData: icsData,
+      ).then((success) {
+        log('SingleEmailController::_saveEventToCalDav: ${success ? 'saved' : 'failed'}');
+      });
+    });
   }
 
   void _checkCalDavPartstat(CalendarEvent event) {
@@ -1327,22 +1385,12 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
         ?? mailboxDashBoardController.ownEmailAddress.value;
     if (userEmail.isEmpty) return;
 
-    final username = userEmail.contains('@') ? userEmail.split('@').first : userEmail;
-    final calendarPath = '/dav/cal/$username/default/';
+    _getCalDavCalendarPath().then((calendarPath) {
+      if (calendarPath == null) return;
 
-    try {
       final calDavApi = Get.find<CalDavApi>();
-      final dynamicUrlInterceptors = Get.find<DynamicUrlInterceptors>();
-      final baseUrl = dynamicUrlInterceptors.jmapUrl ?? dynamicUrlInterceptors.baseUrl ?? '';
-      if (baseUrl.isEmpty) return;
-
-      final uri = Uri.parse(baseUrl);
-      final calDavBaseUrl = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
-
-      log('SingleEmailController::_checkCalDavPartstat: querying UID=$eventUid');
-
       calDavApi.queryPartstatByUid(
-        calendarPath: '$calDavBaseUrl$calendarPath',
+        calendarPath: calendarPath,
         eventUid: eventUid,
         userEmail: userEmail,
       ).then((partstat) {
@@ -1358,17 +1406,12 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
         }
 
         if (status != null) {
-          log('SingleEmailController::_checkCalDavPartstat: found $partstat → updating UI');
+          log('SingleEmailController::_checkCalDavPartstat: $partstat → updating UI');
           attendanceStatus.value = status;
-          // Persist to localStorage for faster lookup next time
           CalendarEventCapabilityRegistry.instance.setAttendanceStatus(eventUid, status);
         }
-      }).catchError((error) {
-        log('SingleEmailController::_checkCalDavPartstat: error=$error');
-      });
-    } catch (e) {
-      log('SingleEmailController::_checkCalDavPartstat: setup error=$e');
-    }
+      }).catchError((_) {});
+    });
   }
 
   void _handleParseCalendarEventFailure(ParseCalendarEventFailure failure) {
@@ -1450,7 +1493,18 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
       if (username == null) return;
 
       final serverBase = baseUrl.replaceAll(RegExp(r'/jmap$'), '');
-      final davUsername = username.contains('@') ? username.split('@')[0] : username;
+      // Use cached CalDAV path if available, otherwise fallback to email prefix
+      String davUsername = username.contains('@') ? username.split('@')[0] : username;
+      try {
+        final calDavApi = Get.find<CalDavApi>();
+        final cachedPath = calDavApi.cachedCalendarPath;
+        if (cachedPath != null) {
+          final segments = Uri.parse(cachedPath).pathSegments.where((s) => s.isNotEmpty).toList();
+          if (segments.length >= 2) {
+            davUsername = segments[segments.length - 2];
+          }
+        }
+      } catch (_) {}
 
       final cardDavApi = Get.find<CardDavApi>();
       for (final sender in email.from!) {
@@ -1642,6 +1696,9 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
     if (eventUid != null && attendanceStatus.value != null) {
       CalendarEventCapabilityRegistry.instance
           .setAttendanceStatus(eventUid, attendanceStatus.value!);
+
+      // Save event to CalDAV calendar for cross-browser RSVP persistence
+      _saveEventToCalDav(calendarEvent!, attendanceStatus.value!);
     }
 
     if (currentOverlayContext == null || currentContext == null) {
