@@ -64,37 +64,23 @@ class CalendarEventActionButtonWidget extends StatelessWidget {
     );
   }
 
+  static const _acceptedColor = Color(0xFF34A853);
+  static const _tentativeColor = Color(0xFF9E9E9E);
+  static const _declinedColor = Color(0xFFEA4335);
+
   Color _getButtonBackgroundColor(EventActionType eventActionType) {
     switch (eventActionType) {
       case EventActionType.yes:
-        if (attendanceStatus == AttendanceStatus.accepted) {
-          return CalendarEventActionButtonWidgetStyles.selectedBackgroundColor;
-        }
-
-        if (calendarEventReplying) {
-          return CalendarEventActionButtonWidgetStyles.loadingBackgroundColor;
-        }
-
+        if (attendanceStatus == AttendanceStatus.accepted) return _acceptedColor;
+        if (calendarEventReplying) return CalendarEventActionButtonWidgetStyles.loadingBackgroundColor;
         return CalendarEventActionButtonWidgetStyles.backgroundColor;
       case EventActionType.maybe:
-        if (attendanceStatus == AttendanceStatus.tentativelyAccepted) {
-          return CalendarEventActionButtonWidgetStyles.selectedBackgroundColor;
-        }
-
-        if (calendarEventReplying) {
-          return CalendarEventActionButtonWidgetStyles.loadingBackgroundColor;
-        }
-
+        if (attendanceStatus == AttendanceStatus.tentativelyAccepted) return _tentativeColor;
+        if (calendarEventReplying) return CalendarEventActionButtonWidgetStyles.loadingBackgroundColor;
         return CalendarEventActionButtonWidgetStyles.backgroundColor;
       case EventActionType.no:
-        if (attendanceStatus == AttendanceStatus.rejected) {
-          return CalendarEventActionButtonWidgetStyles.selectedBackgroundColor;
-        }
-
-        if (calendarEventReplying) {
-          return CalendarEventActionButtonWidgetStyles.loadingBackgroundColor;
-        }
-
+        if (attendanceStatus == AttendanceStatus.rejected) return _declinedColor;
+        if (calendarEventReplying) return CalendarEventActionButtonWidgetStyles.loadingBackgroundColor;
         return CalendarEventActionButtonWidgetStyles.backgroundColor;
       case EventActionType.mailToAttendees:
       case EventActionType.acceptCounter:
@@ -105,22 +91,13 @@ class CalendarEventActionButtonWidget extends StatelessWidget {
   Color _getButtonTextColor(EventActionType eventActionType) {
     switch (eventActionType) {
       case EventActionType.yes:
-        if (attendanceStatus == AttendanceStatus.accepted) {
-          return CalendarEventActionButtonWidgetStyles.selectedTextColor;
-        }
-
+        if (attendanceStatus == AttendanceStatus.accepted) return Colors.white;
         return CalendarEventActionButtonWidgetStyles.textColor;
       case EventActionType.maybe:
-        if (attendanceStatus == AttendanceStatus.tentativelyAccepted) {
-          return CalendarEventActionButtonWidgetStyles.selectedTextColor;
-        }
-
+        if (attendanceStatus == AttendanceStatus.tentativelyAccepted) return Colors.white;
         return CalendarEventActionButtonWidgetStyles.textColor;
       case EventActionType.no:
-        if (attendanceStatus == AttendanceStatus.rejected) {
-          return CalendarEventActionButtonWidgetStyles.selectedTextColor;
-        }
-
+        if (attendanceStatus == AttendanceStatus.rejected) return Colors.white;
         return CalendarEventActionButtonWidgetStyles.textColor;
       case EventActionType.mailToAttendees:
       case EventActionType.acceptCounter:
@@ -131,22 +108,13 @@ class CalendarEventActionButtonWidget extends StatelessWidget {
   Color _getButtonBorderColor(EventActionType eventActionType) {
     switch (eventActionType) {
       case EventActionType.yes:
-        if (attendanceStatus == AttendanceStatus.accepted) {
-          return CalendarEventActionButtonWidgetStyles.selectedBackgroundColor;
-        }
-
+        if (attendanceStatus == AttendanceStatus.accepted) return _acceptedColor;
         return CalendarEventActionButtonWidgetStyles.textColor;
       case EventActionType.maybe:
-        if (attendanceStatus == AttendanceStatus.tentativelyAccepted) {
-          return CalendarEventActionButtonWidgetStyles.selectedBackgroundColor;
-        }
-
+        if (attendanceStatus == AttendanceStatus.tentativelyAccepted) return _tentativeColor;
         return CalendarEventActionButtonWidgetStyles.textColor;
       case EventActionType.no:
-        if (attendanceStatus == AttendanceStatus.rejected) {
-          return CalendarEventActionButtonWidgetStyles.selectedBackgroundColor;
-        }
-
+        if (attendanceStatus == AttendanceStatus.rejected) return _declinedColor;
         return CalendarEventActionButtonWidgetStyles.textColor;
       case EventActionType.mailToAttendees:
       case EventActionType.acceptCounter:

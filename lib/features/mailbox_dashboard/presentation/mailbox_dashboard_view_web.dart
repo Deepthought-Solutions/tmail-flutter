@@ -322,17 +322,21 @@ class MailboxDashBoardView extends BaseMailboxDashBoardView {
                                   if (isSplit) {
                                     return Row(
                                       children: [
-                                        SizedBox(
-                                          width: 420,
-                                          child: MediaQuery(
-                                            data: MediaQuery.of(context).copyWith(
-                                              size: const Size(400, 800),
+                                        Flexible(
+                                          flex: 2,
+                                          child: ConstrainedBox(
+                                            constraints: const BoxConstraints(maxWidth: 400),
+                                            child: MediaQuery(
+                                              data: MediaQuery.of(context).copyWith(
+                                                size: const Size(400, 800),
+                                              ),
+                                              child: _buildThreadViewForWebDesktop(context),
                                             ),
-                                            child: _buildThreadViewForWebDesktop(context),
                                           ),
                                         ),
                                         const VerticalDivider(width: 1),
-                                        Expanded(
+                                        Flexible(
+                                          flex: 5,
                                           child: route == DashboardRoutes.threadDetailed
                                               ? const ThreadDetailView()
                                               : const EmailViewEmptyWidget(),

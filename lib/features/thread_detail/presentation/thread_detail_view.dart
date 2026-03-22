@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:core/presentation/extensions/color_extension.dart';
+import 'package:core/presentation/utils/responsive_utils.dart';
 import 'package:core/presentation/state/failure.dart';
 import 'package:core/presentation/state/success.dart';
 import 'package:core/presentation/views/button/tmail_button_widget.dart';
@@ -35,6 +37,13 @@ class ThreadDetailView extends GetWidget<ThreadDetailController> {
     Widget bodyWidget = Column(
       children: [
         Obx(() {
+          // Hide the app bar in split view desktop mode (sidebar is visible)
+          if (controller.mailboxDashBoardController.splitViewEnabled.value &&
+              PlatformInfo.isWeb &&
+              View.of(context).physicalSize.width /
+              View.of(context).devicePixelRatio >= ResponsiveUtils.minDesktopWidth) {
+            return const SizedBox.shrink();
+          }
           return ThreadDetailAppBar(
             responsiveUtils: controller.responsiveUtils,
             imagePaths: controller.imagePaths,
