@@ -1259,6 +1259,11 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
 
       // Trigger conflict detection against CalDAV
       _checkCalendarConflicts(blob.calendarEventList.first);
+
+      // If no attendance status found yet, check CalDAV for PARTSTAT
+      if (attendanceStatus.value == null) {
+        _checkCalDavPartstat(blob.calendarEventList.first);
+      }
     }
   }
 
@@ -1311,6 +1316,58 @@ class SingleEmailController extends BaseController with AppLoaderMixin {
       });
     } catch (e) {
       log('SingleEmailController::_checkCalendarConflicts: setup error=$e');
+    }
+  }
+
+  void _checkCalDavPartstat(CalendarEvent event) {
+    final eventUid = event.eventId?.id;
+    if (eventUid == null || eventUid.isEmpty) return;
+
+    final userEmail = _identitySelected?.email
+        ?? mailboxDashBoardController.ownEmailAddress.value;
+    if (userEmail.isEmpty) return;
+
+    final username = userEmail.contains('@') ? userEmail.split('@').first : userEmail;
+    final calendarPath = '/dav/cal/$username/default/';
+
+    try {
+      final calDavApi = Get.find<CalDavApi>();
+      final dynamicUrlInterceptors = Get.find<DynamicUrlInterceptors>();
+      final baseUrl = dynamicUrlInterceptors.jmapUrl ?? dynamicUrlInterceptors.baseUrl ?? '';
+      if (baseUrl.isEmpty) return;
+
+      final uri = Uri.parse(baseUrl);
+      final calDavBaseUrl = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+
+      log('SingleEmailController::_checkCalDavPartstat: querying UID=$eventUid');
+
+      calDavApi.queryPartstatByUid(
+        calendarPath: '$calDavBaseUrl$calendarPath',
+        eventUid: eventUid,
+        userEmail: userEmail,
+      ).then((partstat) {
+        if (partstat == null) return;
+
+        AttendanceStatus? status;
+        if (partstat == 'ACCEPTED') {
+          status = AttendanceStatus.accepted;
+        } else if (partstat == 'TENTATIVE') {
+          status = AttendanceStatus.tentativelyAccepted;
+        } else if (partstat == 'DECLINED') {
+          status = AttendanceStatus.rejected;
+        }
+
+        if (status != null) {
+          log('SingleEmailController::_checkCalDavPartstat: found $partstat → updating UI');
+          attendanceStatus.value = status;
+          // Persist to localStorage for faster lookup next time
+          CalendarEventCapabilityRegistry.instance.setAttendanceStatus(eventUid, status);
+        }
+      }).catchError((error) {
+        log('SingleEmailController::_checkCalDavPartstat: error=$error');
+      });
+    } catch (e) {
+      log('SingleEmailController::_checkCalDavPartstat: setup error=$e');
     }
   }
 

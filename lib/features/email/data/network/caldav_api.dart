@@ -60,6 +60,101 @@ class CalDavApi {
     }
   }
 
+  /// Query CalDAV server for a specific event by UID.
+  /// Returns the PARTSTAT of the given [userEmail] if found, null otherwise.
+  Future<String?> queryPartstatByUid({
+    required String calendarPath,
+    required String eventUid,
+    required String userEmail,
+  }) async {
+    final requestBody = '<?xml version="1.0" encoding="utf-8"?>'
+        '<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">'
+        '<d:prop><c:calendar-data/></d:prop>'
+        '<c:filter>'
+        '<c:comp-filter name="VCALENDAR">'
+        '<c:comp-filter name="VEVENT">'
+        '<c:prop-filter name="UID">'
+        '<c:text-match collation="i;octet">$eventUid</c:text-match>'
+        '</c:prop-filter>'
+        '</c:comp-filter>'
+        '</c:comp-filter>'
+        '</c:filter>'
+        '</c:calendar-query>';
+
+    log('CalDavApi::queryPartstatByUid: uid=$eventUid user=$userEmail');
+
+    try {
+      final response = await _dio.request(
+        calendarPath,
+        data: requestBody,
+        options: Options(
+          method: 'REPORT',
+          headers: {
+            'Content-Type': 'application/xml; charset=utf-8',
+            'Depth': '1',
+          },
+          responseType: ResponseType.plain,
+          validateStatus: (status) =>
+              status != null && status >= 200 && status < 300,
+        ),
+      );
+
+      if (response.statusCode != 207) return null;
+
+      final xmlData = response.data as String;
+      final calendarDataPattern = RegExp(
+        r'<[^>]*calendar-data[^>]*>([\s\S]*?)</[^>]*calendar-data>',
+        caseSensitive: false,
+      );
+      final match = calendarDataPattern.firstMatch(xmlData);
+      if (match == null) return null;
+
+      final icsData = match.group(1)?.trim();
+      if (icsData == null) return null;
+
+      return _extractPartstat(icsData, userEmail);
+    } catch (e) {
+      log('CalDavApi::queryPartstatByUid: error=$e');
+      return null;
+    }
+  }
+
+  /// Extract PARTSTAT for a given attendee email from iCalendar data.
+  String? _extractPartstat(String icsData, String userEmail) {
+    final emailLower = userEmail.toLowerCase();
+    final lines = icsData.split(RegExp(r'\r?\n'));
+
+    // Unfold lines
+    final unfolded = <String>[];
+    for (final line in lines) {
+      if (line.startsWith(' ') || line.startsWith('\t')) {
+        if (unfolded.isNotEmpty) {
+          unfolded[unfolded.length - 1] += line.substring(1);
+        }
+      } else {
+        unfolded.add(line);
+      }
+    }
+
+    for (final line in unfolded) {
+      if (!line.startsWith('ATTENDEE')) continue;
+      if (!line.toLowerCase().contains(emailLower)) continue;
+
+      // Extract PARTSTAT from the ATTENDEE line
+      final partstatMatch = RegExp(
+        r'PARTSTAT=([^;:]+)',
+        caseSensitive: false,
+      ).firstMatch(line);
+      if (partstatMatch != null) {
+        final partstat = partstatMatch.group(1)?.trim().toUpperCase();
+        log('CalDavApi::_extractPartstat: found PARTSTAT=$partstat for $emailLower');
+        return partstat;
+      }
+    }
+
+    return null;
+  }
+
   /// Parse WebDAV multistatus XML response to extract iCalendar data blocks.
   /// Uses regex-based extraction to avoid dependency on xml package.
   List<CalDavConflict> _parseMultiStatusResponse(String xmlString) {
